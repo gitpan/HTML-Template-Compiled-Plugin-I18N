@@ -7,6 +7,7 @@ WriteMakefile
           'PREREQ_PM' => {
                            'Class::Singleton' => 0,
                            'HTML::Template::Compiled' => 0,
+                           'Test::Differences' => 0,
                            'Test::Exception' => 0,
                            'Test::NoWarnings' => 0,
                            'Test::Simple' => 0,

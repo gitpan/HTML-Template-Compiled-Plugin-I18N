@@ -18,11 +18,13 @@ Module::Build->new(
         'HTML::Template::Compiled' => 0,
     },
     build_requires => {
-        'Test::Simple'     => 0, # for Test::More
-        'Test::NoWarnings' => 0,
-        'Test::Exception'  => 0,
-        parent             => 0,
-        'Class::Singleton' => 0,
+        # Cwd               => 0, # perl dist
+        'Test::Simple'      => 0, # for Test::More
+        'Test::NoWarnings'  => 0,
+        'Test::Exception'   => 0,
+        'Test::Differences' => 0,
+        parent              => 0,
+        'Class::Singleton'  => 0,
     },
     recommends => {
         # build

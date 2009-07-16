@@ -3,7 +3,7 @@ package HTML::Template::Compiled::Plugin::I18N::DefaultTranslator;
 use strict;
 use warnings;
 
-our $VERSION = '0.01';
+our $VERSION = '0.01_02';
 
 my $escape = sub {
     my $string = shift;
@@ -41,7 +41,7 @@ sub translate {
         )
         : ();
     } qw(
-        context text plural maketext quantity gettext formatter
+        context text plural maketext count gettext formatter
     );
 }
 
@@ -56,13 +56,13 @@ __END__
 HTML::Template::Compiled::Plugin::I18N::DefaultTranslator
 - an extremly simple translater class for the HTC plugin I18N
 
-$Id: DefaultTranslator.pm 49 2009-07-12 20:27:59Z steffenw $
+$Id: DefaultTranslator.pm 81 2009-07-16 08:31:46Z steffenw $
 
 $HeadURL: https://htc-plugin-i18n.svn.sourceforge.net/svnroot/htc-plugin-i18n/trunk/lib/HTML/Template/Compiled/Plugin/I18N/DefaultTranslator.pm $
 
 =head1 VERSION
 
-0.01_01
+0.01_02
 
 =head1 SYNOPSIS
 
@@ -71,15 +71,15 @@ $HeadURL: https://htc-plugin-i18n.svn.sourceforge.net/svnroot/htc-plugin-i18n/tr
 This module is very useful to run the application
 before the translator module has finished.
 
-The string output is human readable.
-\, ' and " are quoted to have no problems at JavaScript strings.
+The output string is human readable.
+C<\>, C<'> and C<"> are quoted to have no problems at JavaScript strings.
 
 =head1 SUBROUTINES/METHODS
 
-=head2 method translate
+=head2 class method translate
 
 Possible hash keys are
-context, text, plural, maketext, quantity, gettext and formatter.
+context, text, plural, maketext, count, gettext and formatter.
 
     $string
         = HTML::Template::Compiled::Plugin::I18N::DefaultTranslator->translate({
@@ -101,7 +101,8 @@ none
 
 =head1 INCOMPATIBILITIES
 
-not readable by a parser
+The output is not readable by a parser
+but very good during the application development.
 
 =head1 BUGS AND LIMITATIONS
 

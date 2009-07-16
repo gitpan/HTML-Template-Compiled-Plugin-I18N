@@ -4,11 +4,21 @@ use strict;
 use warnings;
 
 use File::Find;
-use Test::DBD::PO::Defaults qw($PATH $UNTAINT_FILENAME_PATTERN);
 use Test::More;
+use Cwd qw(getcwd);
 
 $ENV{TEST_AUTHOR}
     or plan skip_all => 'Author test. Set $ENV{TEST_AUTHOR} to a true value to run.';
+
+my $UNTAINT_FILENAME_PATTERN = qr{\A (
+    (?:
+        (?: [A-Z] : )
+        | //
+    )?
+    [0-9A-Z_\-/\. ]+
+) \z}xmsi;
+my ($PATH) = getcwd() =~ $UNTAINT_FILENAME_PATTERN;
+$PATH =~ s{\\}{/}xmsg;
 
 my @list;
 find(

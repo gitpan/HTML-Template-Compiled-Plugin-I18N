@@ -1,6 +1,6 @@
 ---
 name: HTML-Template-Compiled-Plugin-I18N
-version: 0.01_01
+version: 0.01_02
 author:
   - 'Steffen Winkler <steffenw at cpan.org>'
 abstract: 'HTML::Template::Compiled::Plugin::I18N - Internationalization for HTC'
@@ -12,6 +12,7 @@ requires:
   perl: 5.006001
 build_requires:
   Class::Singleton: 0
+  Test::Differences: 0
   Test::Exception: 0
   Test::NoWarnings: 0
   Test::Simple: 0
@@ -23,10 +24,10 @@ recommends:
 provides:
   HTML::Template::Compiled::Plugin::I18N:
     file: lib/HTML/Template/Compiled/Plugin/I18N.pm
-    version: 0.01_01
+    version: 0.01_02
   HTML::Template::Compiled::Plugin::I18N::DefaultTranslator:
     file: lib/HTML/Template/Compiled/Plugin/I18N/DefaultTranslator.pm
-    version: 0.01
+    version: 0.01_02
 generated_by: Module::Build version 0.2808
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.2.html

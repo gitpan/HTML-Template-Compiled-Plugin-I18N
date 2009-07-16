@@ -11,10 +11,10 @@ use HTML::Template::Compiled::Plugin::I18N;
 HTML::Template::Compiled::Plugin::I18N->init();
 
 my $htc = HTML::Template::Compiled->new(
-    plugin         => [qw(HTML::Template::Compiled::Plugin::I18N)],
-    tagstyle       => [qw(-classic -comment +asp)],
-    scalarref      => \<<'EOT');
-<%TEXT NAME="bla bla"%>
+    plugin    => [qw(HTML::Template::Compiled::Plugin::I18N)],
+    tagstyle  => [qw(-classic -comment +asp)],
+    scalarref => \<<'EOT');
+<%TEXT NAME="foo & bar" ESCAPE="HTML"%>
 EOT
 $htc->param(
 );
@@ -26,4 +26,4 @@ __END__
 
 Output:
 
-bla bla
+text=foo &amp; bar

@@ -3,7 +3,7 @@ package HTML::Template::Compiled::Plugin::I18N;
 use strict;
 use warnings;
 
-our $VERSION = '0.01_01';
+our $VERSION = '0.01_02';
 
 use Carp qw(croak);
 use English qw(-no_match_vars $EVAL_ERROR);
@@ -119,8 +119,8 @@ sub register {
                         ? qw(
                             PLURAL
                             PLURAL_VAR
-                            QUANTITY
-                            QUANTITY_VAR
+                            COUNT
+                            COUNT_VAR
                             CONTEXT
                             CONTEXT_VAR
                             _[A-Z][0-9A-Z_]*?
@@ -325,15 +325,15 @@ sub TEXT { ## no critic (ExcessComplexity)
                 };
                 next ATTRIBUTE;
             }
-            # QUANTITY, QUANTITY_VAR
-            my $is_quantity
+            # COUNT, COUNT_VAR
+            my $is_count
                 = ($is_variable)
-                = $name =~ m{\A QUANTITY (_VAR)? \z}xms;
-            if ($is_quantity) {
-                if ( exists $data{quantity} ) {
-                    _throw("error in template $filename can't use QUANTITY/QUANTITY_VAR twice");
+                = $name =~ m{\A COUNT (_VAR)? \z}xms;
+            if ($is_count) {
+                if ( exists $data{count} ) {
+                    _throw("error in template $filename can't use COUNT/COUNT_VAR twice");
                 }
-                $data{quantity} = {
+                $data{count} = {
                     is_variable => $is_variable,
                     value       => $attr_ref->{$name},
                 };
@@ -512,7 +512,7 @@ sub TEXT { ## no critic (ExcessComplexity)
     };
     # run for real escapes
     ESCAPE:
-    for my $key ( qw(filename text plural quantity context) ) {
+    for my $key ( qw(filename text plural count context) ) {
         exists $data{$key}
             or next ESCAPE;
         my $data = $data{$key};
@@ -605,13 +605,13 @@ __END__
 
 HTML::Template::Compiled::Plugin::I18N - Internationalization for HTC
 
-$Id: I18N.pm 59 2009-07-14 09:10:09Z steffenw $
+$Id: I18N.pm 81 2009-07-16 08:31:46Z steffenw $
 
 $HeadURL: https://htc-plugin-i18n.svn.sourceforge.net/svnroot/htc-plugin-i18n/trunk/lib/HTML/Template/Compiled/Plugin/I18N.pm $
 
 =head1 VERSION
 
-0.01_01
+0.01_02
 
 =head1 SYNOPSIS
 
@@ -727,7 +727,7 @@ Allow maketext during initialization.
 
 =over
 
-=item with an static value
+=item * with a static value
 
     <%TEXT VALUE="Hello [_1]!" _1="world"%>
     <%TEXT VALUE="Hello [_1]!" _1="world" _1_ESCAPE=0%>
@@ -742,7 +742,7 @@ The 2nd parameter of the method translate (translator class) will set to:
         # escapes were handled already
     }
 
-=item with an variable
+=item * with a variable
 
     <%TEXT VALUE="Hello [_1]!" _1_VAR="var.with.the.value"%>
     <%TEXT VALUE="Hello [_1]!" _1_VAR="var.with.the.value" _1_ESCAPE=0%>
@@ -757,7 +757,7 @@ The 2nd parameter of the method translate (translator class) will set to:
         # escapes were handled already
     }
 
-=item mixed samples
+=item * mixed samples
 
     <%TEXT VALUE="The [_1] is [_2]." _1="window" _2="blue" %>
     <%TEXT a.text                    _1="window" _2_VAR="var.color" %>
@@ -775,7 +775,7 @@ Allow gettext during initialization.
 
 =over
 
-=item with an static value
+=item * with a static value
 
     <%TEXT VALUE="Hello {name}!" _name="world"%>
     <%TEXT VALUE="Hello {name}!" _name="world" _name_ESCAPE=0%>
@@ -790,7 +790,7 @@ The 2nd parameter of the method translate (translator class) will set to:
         # escapes were handled already
     }
 
-=item with an variable
+=item * with a variable
 
     <%TEXT VALUE="Hello {name}!" _name_VAR="var.with.the.value"%>
     <%TEXT VALUE="Hello {name}!" _name_VAR="var.with.the.value" _name_ESCAPE=0%>
@@ -805,16 +805,11 @@ The 2nd parameter of the method translate (translator class) will set to:
         # escapes were handled already
     }
 
-=item plural forms TODO with PLURAL PLURAL_VAR _name_QUANTITY _name_QUANTITY_VAR
+=item * plural forms with PLURAL, PLURAL_VAR, COUNT COUNT_VAR
 
-    <%TEXT VALUE="Hello {name}!" _name="world"%>
-    <%TEXT VALUE="Hello {name}!" _name="world" _name_ESCAPE=0%>
-    <%TEXT VALUE="Hello {name}!" _name="world" ESCAPE=HTML%>
-    <%TEXT VALUE="Hello {name}!" _name="world" _name_ESCAPE=0 ESCAPE=HTML%>
-    <%TEXT VALUE="Hello {name}!" _name_VAR="var.with.the.value"%>
-    <%TEXT VALUE="Hello {name}!" _name_VAR="var.with.the.value _name_ESCAPE=0"%>
-    <%TEXT VALUE="Hello {name}!" _name_VAR="var.with.the.value" ESCAPE=HTML%>
-    <%TEXT VALUE="Hello {name}!" _name_VAR="var.with.the.value" _name_ESCAPE=0 ESCAPE=HTML%>
+    <%TEXT VALUE="book" PLURAL="books" COUNT="1"%>
+    <%TEXT VALUE="book" PLURAL="books" COUNT_VAR="var.num"%>
+    <%TEXT VALUE="{num} book" PLURAL="{num} books" COUNT="2" _num="2"
 
 =back
 
@@ -925,7 +920,7 @@ none
 
 =head1 CONFIGURATION AND ENVIRONMENT
 
-Call init method beform C<HTML::Template::Compiled->new(...)>.
+Call init method before HTML::Template::Compiled->new(...).
 
 =head1 DEPENDENCIES
 
