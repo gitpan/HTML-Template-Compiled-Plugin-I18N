@@ -21,8 +21,8 @@ my $htc = HTML::Template::Compiled->new(
     plugin    => [qw(HTML::Template::Compiled::Plugin::I18N)],
     tagstyle  => [qw(-classic -comment +asp)],
     scalarref => \<<'EOT');
-<%TEXT NAME="[_1] is programming [_2]." _1="Steffen" _2_VAR="language"%>
-<%TEXT NAME="This is the [_1]link[_2]." _1="<a href=http://www.perl.org/>" _1_ESCAPE="0" _2="</a>" _2_ESCAPE="0" ESCAPE="HTML"%>
+<%TEXT VALUE="[_1] is programming [_2]." _1="Steffen" _2_VAR="language"%>
+<%TEXT VALUE="This is the [_1]link[_2]." _1="<a href=http://www.perl.org/>" _1_ESCAPE="0" _2="</a>" _2_ESCAPE="0" ESCAPE="HTML"%>
 
 EOT
 $htc->param(

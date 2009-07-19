@@ -27,7 +27,7 @@ my @data = (
                 ->new()
                 ->set_language('en');
         },
-        template => '<%TEXT "Hello world!"%>',
+        template => '<%TEXT VALUE="Hello world!"%>',
         result   => 'Hello world!',
     },
     {
@@ -37,7 +37,7 @@ my @data = (
                 ->new()
                 ->set_language('de');
         },
-        template => '<%TEXT "Hello world!"%>',
+        template => '<%TEXT VALUE="Hello world!"%>',
         result   => 'Hallo Welt!',
     },
 );

@@ -22,19 +22,19 @@ my $htc = HTML::Template::Compiled->new(
     tagstyle  => [qw(-classic -comment +asp)],
     scalarref => \<<'EOT');
 * placeholder
-  <%TEXT NAME="{name} is programming {language}." _name="Steffen" _language_VAR="language"%>
+  <%TEXT VALUE="{name} is programming {language}." _name="Steffen" _language_VAR="language"%>
 * different placeholder escape
-  <%TEXT NAME="This is the {link_begin}link{link_end}." _link_begin="<a href=http://www.perl.org/>" _link_begin_ESCAPE="0" _link_end="</a>" _link_end_ESCAPE="0" ESCAPE="HTML"%>
+  <%TEXT VALUE="This is the {link_begin}link{link_end}." _link_begin="<a href=http://www.perl.org/>" _link_begin_ESCAPE="0" _link_end="</a>" _link_end_ESCAPE="0" ESCAPE="HTML"%>
 * no context
-  <%TEXT NAME="Context?"%>
+  <%TEXT VALUE="Context?"%>
 * context
-  <%TEXT NAME="Context?" CONTEXT="this_context"%>
+  <%TEXT VALUE="Context?" CONTEXT="this_context"%>
 * plural
-  <%TEXT NAME="shelf" PLURAL="shelves" COUNT="1"%>
-  <%TEXT NAME="shelf" PLURAL="shelves" COUNT="2"%>
+  <%TEXT VALUE="shelf" PLURAL="shelves" COUNT="1"%>
+  <%TEXT VALUE="shelf" PLURAL="shelves" COUNT="2"%>
 * context and plural
-  <%TEXT NAME="shelf" PLURAL="shelves" COUNT="1" CONTEXT="better"%>
-  <%TEXT NAME="shelf" PLURAL="shelves" COUNT="2" CONTEXT="better"%>
+  <%TEXT VALUE="shelf" PLURAL="shelves" COUNT="1" CONTEXT="better"%>
+  <%TEXT VALUE="shelf" PLURAL="shelves" COUNT="2" CONTEXT="better"%>
 
 EOT
 $htc->param(
@@ -84,4 +84,3 @@ Output:
 * context and plural
   gutes Regal
   gute Regale
-

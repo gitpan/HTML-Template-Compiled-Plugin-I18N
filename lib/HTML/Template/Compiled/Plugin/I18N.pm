@@ -3,7 +3,7 @@ package HTML::Template::Compiled::Plugin::I18N;
 use strict;
 use warnings;
 
-our $VERSION = '0.01_02';
+our $VERSION = '0.01_03';
 
 use Carp qw(croak);
 use English qw(-no_match_vars $EVAL_ERROR);
@@ -444,12 +444,12 @@ sub TEXT { ## no critic (ExcessComplexity)
                 . __PACKAGE__ . Data::Dumper::Dumper $attr_ref
             )
             : (
-                value => $attr_ref->{NAME},
+                is_variable => 1,
+                value       => $attr_ref->{NAME},
             )
         )
         : (
-            is_variable => 1,
-            value       => $attr_ref->{VALUE},
+            value => $attr_ref->{VALUE},
         )
     };
 
@@ -605,13 +605,13 @@ __END__
 
 HTML::Template::Compiled::Plugin::I18N - Internationalization for HTC
 
-$Id: I18N.pm 81 2009-07-16 08:31:46Z steffenw $
+$Id: I18N.pm 103 2009-07-19 18:32:33Z steffenw $
 
 $HeadURL: https://htc-plugin-i18n.svn.sourceforge.net/svnroot/htc-plugin-i18n/trunk/lib/HTML/Template/Compiled/Plugin/I18N.pm $
 
 =head1 VERSION
 
-0.01_02
+0.01_03
 
 =head1 SYNOPSIS
 

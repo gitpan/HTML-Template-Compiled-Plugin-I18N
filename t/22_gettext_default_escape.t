@@ -17,28 +17,28 @@ HTML::Template::Compiled::Plugin::I18N->init(allow_gettext => 1);
 my @data = (
     {
         test     => 'gettext, escape HTML for the placeholder',
-        template => '<%TEXT "text<1>" _name="<>"%>',
+        template => '<%TEXT VALUE="text<1>" _name="<>"%>',
         result   => 'text=text&lt;1&gt;;gettext=name,&lt;&gt;',
     },
     {
         test     => 'gettext, escape 0 for the placeholder',
-        template => '<%TEXT "text<2>" _name="<>" _name_ESCAPE=0%>',
+        template => '<%TEXT VALUE="text<2>" _name="<>" _name_ESCAPE=0%>',
         result   => 'text=text&lt;2&gt;;gettext=name,<>',
     },
     {
         test     => 'gettext, escape URI but not for the placeholder',
-        template => '<%TEXT "text<2>" _name="<>" _name_ESCAPE="HTML" ESCAPE=URI%>',
+        template => '<%TEXT VALUE="text<2>" _name="<>" _name_ESCAPE="HTML" ESCAPE=URI%>',
         result   => 'text=text%3C2%3E;gettext=name,&lt;&gt;',
     },
     {
         test     => 'gettext, escape URI for the placeholder var too',
-        template => '<%TEXT "text<3>" _name_VAR="value1" ESCAPE="URI"%>',
+        template => '<%TEXT VALUE="text<3>" _name_VAR="value1" ESCAPE="URI"%>',
         params   => {value1 =>'<>'},
         result   => 'text=text%3C3%3E;gettext=name,%3C%3E',
     },
     {
         test     => 'gettext, escape URI but for the Placeholder HTML|DUMP',
-        template => '<%TEXT "text<4>" _name_VAR="value1" _name_ESCAPE="HTML|DUMP" ESCAPE=URI%>',
+        template => '<%TEXT VALUE="text<4>" _name_VAR="value1" _name_ESCAPE="HTML|DUMP" ESCAPE=URI%>',
         params   => {value1 =>'<>'},
         result   => "text=text%3C4%3E;gettext=name,\$VAR1 = \\'&lt;&gt;\\';\n",
     },

@@ -17,23 +17,23 @@ HTML::Template::Compiled::Plugin::I18N->init(allow_maketext => 1);
 my @data = (
     {
         test     => 'maketext, escape HTML for the placeholder',
-        template => '<%TEXT "text<1>" _1="<>" _1_ESCAPE="HTML"%>',
+        template => '<%TEXT VALUE="text<1>" _1="<>" _1_ESCAPE="HTML"%>',
         result   => 'text=text<1>;maketext=&lt;&gt;',
     },
     {
         test     => 'maketext, escape HTML but not for the placeholder',
-        template => '<%TEXT "text<2>" _1="<>" _1_ESCAPE="0" ESCAPE=HTML%>',
+        template => '<%TEXT VALUE="text<2>" _1="<>" _1_ESCAPE="0" ESCAPE=HTML%>',
         result   => 'text=text&lt;2&gt;;maketext=<>',
     },
     {
         test     => 'maketext, escape URI for the placeholder var',
-        template => '<%TEXT "text<3>" _1_VAR="value1" _1_ESCAPE="URI"%>',
+        template => '<%TEXT VALUE="text<3>" _1_VAR="value1" _1_ESCAPE="URI"%>',
         params   => {value1 =>'<>'},
         result   => 'text=text<3>;maketext=%3C%3E',
     },
     {
         test     => 'maketext, escape URI but not for the placeholder var',
-        template => '<%TEXT "text<4>" _1_VAR="value1" _1_ESCAPE="0" ESCAPE=URI%>',
+        template => '<%TEXT VALUE="text<4>" _1_VAR="value1" _1_ESCAPE="0" ESCAPE=URI%>',
         params   => {value1 =>'<>'},
         result   => 'text=text%3C4%3E;maketext=<>',
     },

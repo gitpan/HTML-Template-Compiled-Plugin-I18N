@@ -10,12 +10,12 @@ Module::Build->new(
     dist_author       => 'Steffen Winkler <steffenw at cpan.org>',
     dist_version_from => 'lib/HTML/Template/Compiled/Plugin/I18N.pm',
     requires          => {
-        perl                       => 5.006001,
+        perl                       => '5.006001',
         # Carp                     => 0, # perl dist
         # English                  => 0, # perl dist
         # 'Hash::Util'             => 0, # perl dist
         # 'Data::Dumper'           => 0, # perl dist
-        'HTML::Template::Compiled' => 0,
+        'HTML::Template::Compiled' => '0.93',
     },
     build_requires => {
         # Cwd               => 0, # perl dist

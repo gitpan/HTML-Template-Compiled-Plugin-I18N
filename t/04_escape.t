@@ -17,27 +17,27 @@ HTML::Template::Compiled::Plugin::I18N->init();
 my @data = (
     {
         test     => 'no escape',
-        template => '<%TEXT "<>"%>',
+        template => '<%TEXT VALUE="<>"%>',
         result   => 'text=<>',
     },
     {
         test     => 'escape 0',
-        template => '<%TEXT "<>" ESCAPE=0%>',
+        template => '<%TEXT VALUE="<>" ESCAPE=0%>',
         result   => 'text=<>',
     },
     {
         test     => 'escape HTML',
-        template => '<%TEXT "<>" ESCAPE=HTML%>',
+        template => '<%TEXT VALUE="<>" ESCAPE=HTML%>',
         result   => 'text=&lt;&gt;',
     },
     {
         test     => 'escape DUMP',
-        template => '<%TEXT "mytext" ESCAPE=DUMP%>',
+        template => '<%TEXT VALUE="mytext" ESCAPE=DUMP%>',
         result   => "text=\$VAR1 = \\'mytext\\';\n",
     },
     {
         test     => 'escape DUMP|HTML',
-        template => '<%TEXT "mytext" ESCAPE=DUMP|HTML%>',
+        template => '<%TEXT VALUE="mytext" ESCAPE=DUMP|HTML%>',
         result   => "text=\$VAR1 = &#39;mytext&#39;;\n",
     },
 );

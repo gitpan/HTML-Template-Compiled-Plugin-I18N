@@ -16,47 +16,48 @@ HTML::Template::Compiled::Plugin::I18N->init();
 
 my @data = (
     {
-        test     => 'text',
-        template => '<%TEXT "text1"%>',
+        test     => 'text at attribute VALUE',
+        template => '<%TEXT VALUE="text1"%>',
         result   => 'text=text1',
     },
     {
-        test     => 'text at attribute NAME',
-        template => '<%TEXT NAME="text2"%>',
+        test     => 'text in variable',
+        template => '<%TEXT var%>',
+        params   => {var => 'text2'},
         result   => 'text=text2',
     },
     {
-        test     => 'text in variable',
-        template => '<%TEXT VALUE="var"%>',
+        test     => 'text in variable at attribute NAME',
+        template => '<%TEXT NAME="var"%>',
         params   => {var => 'text3'},
         result   => 'text=text3',
     },
 #    {
-#        test      => 'text in variable',
-#        template  => '<%TEXT NAME="name" VALUE="var"%>',
+#        test      => 'attribute NAME and VALUE set',
+#        template  => '<%TEXT NAME="var" VALUE="name"%>',
 #        exception => qr{\Qcan't use NAME and VALUE at the same time}xms,
 #    },
     {
         test     => 'hash chain',
-        template => '<%TEXT VALUE="hash.first_key.second_key"%>',
+        template => '<%TEXT hash.first_key.second_key%>',
         params   => {hash => {first_key => {second_key => 'hash1'}}},
         result   => 'text=hash1',
     },
     {
         test     => 'no object',
-        template => '<%TEXT VALUE="no_object.get_value"%>',
+        template => '<%TEXT no_object.get_value%>',
         params   => {no_object => undef},
         result   => 'text=undef',
     },
     {
         test     => 'object',
-        template => '<%TEXT VALUE="object.get_value"%>',
+        template => '<%TEXT object.get_value%>',
         params   => { object => bless {value => 'object1'}, __PACKAGE__ },
         result   => 'text=object1',
     },
     {
         test     => 'object chain',
-        template => '<%TEXT VALUE="outer_object.get_inner_object.get_value"%>',
+        template => '<%TEXT outer_object.get_inner_object.get_value%>',
         params   => {
             do {
                 my $inner_object = bless {value => 'object2'}, __PACKAGE__;
@@ -70,9 +71,9 @@ my @data = (
         result   => 'text=object2',
     },
     {
-        test      => 'broken object chain',
-        template  => '<%TEXT VALUE="outer_object.get_break.get_value"%>',
-        params    => {
+        test     => 'broken object chain',
+        template => '<%TEXT outer_object.get_break.get_value%>',
+        params   => {
             do {
                 my $inner_object = bless {value => 'object3'}, __PACKAGE__;
                 my $outer_object = bless {inner_object => $inner_object}, __PACKAGE__;
@@ -82,7 +83,7 @@ my @data = (
                 );
             },
         },
-        exception => qr{\QCan't locate object method "get_break"}xms,
+        result   => 'text=undef',
     },
 #    {
 #        test      => 'no maketext',
@@ -105,6 +106,7 @@ for my $data (@data) {
     my $htc = HTML::Template::Compiled->new(
         tagstyle  => [qw(-classic -comment +asp)],
         plugin    => [qw(HTML::Template::Compiled::Plugin::I18N)],
+        objects   => 'nostrict',
         scalarref => \$data->{template},
     );
     if ( exists $data->{params} ) {

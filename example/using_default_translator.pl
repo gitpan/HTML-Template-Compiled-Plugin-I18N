@@ -14,7 +14,7 @@ my $htc = HTML::Template::Compiled->new(
     plugin    => [qw(HTML::Template::Compiled::Plugin::I18N)],
     tagstyle  => [qw(-classic -comment +asp)],
     scalarref => \<<'EOT');
-<%TEXT NAME="foo & bar" ESCAPE="HTML"%>
+<%TEXT VALUE="foo & bar" ESCAPE="HTML"%>
 EOT
 $htc->param(
 );

@@ -17,7 +17,7 @@ HTML::Template::Compiled::Plugin::I18N->init(allow_formatter => 1);
 my @data = (
     {
         test     => 'formatter markdown',
-        template => '<%TEXT "text" FORMATTER="formatter1"%>',
+        template => '<%TEXT VALUE="text" FORMATTER="formatter1"%>',
         result   => 'text=text;formatter=formatter1',
     },
 );
