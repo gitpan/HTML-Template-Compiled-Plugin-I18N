@@ -37,6 +37,11 @@ my @data = (
         params   => {value1 =>'<>'},
         result   => 'text=text%3C4%3E;gettext=name,<>',
     },
+#    {
+#        test      => 'gettext, unknown escape',
+#        template  => '<%TEXT VALUE="text5" _name="<>" _name_ESCAPE="XXX"%>',
+#        exception => qr{\Qunknown escape XXX}xms,
+#    },
 );
 
 for my $data (@data) {

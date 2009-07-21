@@ -3,40 +3,53 @@ package HTML::Template::Compiled::Plugin::I18N::DefaultTranslator;
 use strict;
 use warnings;
 
-our $VERSION = '0.01_02';
+use Carp qw(croak);
 
-my $escape = sub {
+our $VERSION = '0.01_04';
+
+my $escape_ref = sub {
     my $string = shift;
 
     defined $string
-        or return q{undef};
-    $string =~ s{\\}{\\}xmsg;
-    $string =~ s{'}{\\'}xmsg;
-    $string =~ s{"}{\\"}xmsg;
+        and return $string;
 
-    return $string;
+    return 'undef';
 };
 
+sub set_escape {
+    my (undef, $code_ref) = @_;
+
+    ref $code_ref eq 'CODE'
+        or croak 'Coderef expected';
+    $escape_ref = $code_ref;
+
+    return;
+}
+
+sub get_escape {
+    return $escape_ref;
+}
+
 sub translate {
-    my (undef, $params) = @_;
+    my (undef, $attr_ref) = @_;
 
     return join q{;}, map {
-        exists $params->{$_}
+        exists $attr_ref->{$_}
         ? (
             "$_="
             . join q{,}, map {
-                $escape->($_);
+                $escape_ref->($_);
             } (
-                ref $params->{$_} eq 'ARRAY'
-                ? @{ $params->{$_} }
-                : ref $params->{$_} eq 'HASH'
+                ref $attr_ref->{$_} eq 'ARRAY'
+                ? @{ $attr_ref->{$_} }
+                : ref $attr_ref->{$_} eq 'HASH'
                 ? do {
                     my $key = $_;
                     map {
-                        ( $_, $params->{$key}->{$_} );
-                    } sort keys %{ $params->{$key} };
+                        ( $_, $attr_ref->{$key}->{$_} );
+                    } sort keys %{ $attr_ref->{$key} };
                 }
-                : $params->{$_}
+                : $attr_ref->{$_}
             )
         )
         : ();
@@ -56,13 +69,13 @@ __END__
 HTML::Template::Compiled::Plugin::I18N::DefaultTranslator
 - an extremly simple translater class for the HTC plugin I18N
 
-$Id: DefaultTranslator.pm 81 2009-07-16 08:31:46Z steffenw $
+$Id: DefaultTranslator.pm 109 2009-07-21 05:11:15Z steffenw $
 
 $HeadURL: https://htc-plugin-i18n.svn.sourceforge.net/svnroot/htc-plugin-i18n/trunk/lib/HTML/Template/Compiled/Plugin/I18N/DefaultTranslator.pm $
 
 =head1 VERSION
 
-0.01_02
+0.01_04
 
 =head1 SYNOPSIS
 
@@ -72,9 +85,31 @@ This module is very useful to run the application
 before the translator module has finished.
 
 The output string is human readable.
-C<\>, C<'> and C<"> are quoted to have no problems at JavaScript strings.
 
 =head1 SUBROUTINES/METHODS
+
+=head2 class method set_escape
+
+Set a escape code reference to escape all the values.
+The example describes the default to have no undefined values.
+
+    HTML::Template::Compiled::Plugin::I18N::DefaultTranslator->set_escape(
+        sub {
+            my $string = shift;
+
+            defined $string
+                and return $string;
+
+            return 'undef';
+        },
+    );
+
+=head2 class method get_escape
+
+Get back the current escape code reference.
+
+   $code_ref
+       = HTML::Template::Compiled::Plugin::I18N::DefaultTranslator->get_escape();
 
 =head2 class method translate
 
@@ -97,7 +132,7 @@ none
 
 =head1 DEPENDENCIES
 
-none
+Carp
 
 =head1 INCOMPATIBILITIES
 

@@ -33,7 +33,7 @@ my @data = (
     {
         test     => 'escape DUMP',
         template => '<%TEXT VALUE="text<4>" ESCAPE=DUMP%>',
-        result   => "text=\$VAR1 = \\'text<4>\\';\n",
+        result   => "text=\$VAR1 = 'text<4>';\n",
     },
     {
         test     => 'escape DUMP|HTML',

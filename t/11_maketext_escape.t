@@ -37,6 +37,11 @@ my @data = (
         params   => {value1 =>'<>'},
         result   => 'text=text%3C4%3E;maketext=<>',
     },
+#    {
+#        test      => 'maketext, unknown escape',
+#        template  => '<%TEXT VALUE="text5" _1="<>" _1_ESCAPE="XXX"%>',
+#        exception => qr{\@unknown escape XXX}xms,
+#    },
 );
 
 for my $data (@data) {

@@ -40,7 +40,7 @@ my @data = (
         test     => 'gettext, escape URI but for the Placeholder HTML|DUMP',
         template => '<%TEXT VALUE="text<4>" _name_VAR="value1" _name_ESCAPE="HTML|DUMP" ESCAPE=URI%>',
         params   => {value1 =>'<>'},
-        result   => "text=text%3C4%3E;gettext=name,\$VAR1 = \\'&lt;&gt;\\';\n",
+        result   => "text=text%3C4%3E;gettext=name,\$VAR1 = '&lt;&gt;';\n",
     },
 );
 

@@ -33,13 +33,18 @@ my @data = (
     {
         test     => 'escape DUMP',
         template => '<%TEXT VALUE="mytext" ESCAPE=DUMP%>',
-        result   => "text=\$VAR1 = \\'mytext\\';\n",
+        result   => "text=\$VAR1 = 'mytext';\n",
     },
     {
         test     => 'escape DUMP|HTML',
         template => '<%TEXT VALUE="mytext" ESCAPE=DUMP|HTML%>',
         result   => "text=\$VAR1 = &#39;mytext&#39;;\n",
     },
+#    {
+#        test      => 'unknown escape',
+#        template  => '<%TEXT VALUE="mytext" ESCAPE=XXX%>',
+#        exception => qr{\Qunknown escape XXX}xms,
+#    },
 );
 
 for my $data (@data) {

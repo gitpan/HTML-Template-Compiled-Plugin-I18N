@@ -23,7 +23,8 @@ t/04_escape.t
 t/05_formatter.t
 t/06_default_escape.t
 t/07_escape_plugin.t
-t/08_real_translator.t
+t/08_default_translator.t
+t/09_real_translator.t
 t/11_maketext_escape.t
 t/12_maketext_default_escape.t
 t/21_gettext_escape.t

@@ -1,5 +1,8 @@
 Revision history for Perl extension HTML::Template::Compiled::Plugin::I18N.
 
+0.01  Tue Jul 21 09:00:00 2009
+- change API of DefaultTranslator
+
 0.01_03  Sun Jul 19 21:00:00 2009
 - bugfix of an important mistake
   NAME is the name of the variable and VALUE is the value itself.
