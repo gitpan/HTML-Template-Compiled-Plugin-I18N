@@ -5,7 +5,6 @@ use warnings;
 
 use Test::More tests => 8 + 1;
 use Test::NoWarnings;
-use Test::Exception;
 
 BEGIN {
     use_ok('HTML::Template::Compiled');
@@ -65,18 +64,9 @@ for my $data (@data) {
     if ( exists $data->{params} ) {
         $htc->param( %{ $data->{params} } );
     }
-    if ( exists $data->{exception} ) {
-        throws_ok(
-            sub { $htc->output() },
-            $data->{exception},
-            $data->{test},
-        );
-    }
-    else {
-        is(
-            $htc->output(),
-            $data->{result},
-            $data->{test},
-        );
-    }
+    is(
+        $htc->output(),
+        $data->{result},
+        $data->{test},
+    );
 }

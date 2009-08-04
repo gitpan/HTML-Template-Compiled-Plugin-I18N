@@ -3,7 +3,15 @@
 use strict;
 use warnings;
 
-use Test::More tests => 6 + 1;
+use English qw(-no_match_vars $EVAL_ERROR);
+use Test::More;
+BEGIN {
+    eval 'use HTML::Entities';
+    plan skip_all => "HTML::Entities required for testing ESCAPE=HTML; $EVAL_ERROR" if $EVAL_ERROR;
+    eval 'use URI::Escape';
+    plan skip_all => "URI::Escape required for testing ESCAPE=URI; $EVAL_ERROR" if $EVAL_ERROR;
+    plan tests => 6 + 1;
+}
 use Test::NoWarnings;
 use Test::Exception;
 

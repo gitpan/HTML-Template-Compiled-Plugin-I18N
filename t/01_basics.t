@@ -35,7 +35,7 @@ my @data = (
 #    {
 #        test      => 'attribute NAME and VALUE set',
 #        template  => '<%TEXT NAME="var" VALUE="name"%>',
-#        exception => qr{\Qcan't use NAME and VALUE at the same time}xms,
+#        exception => qr{\QCan not use NAME and VALUE at the same time.}xms,
 #    },
     {
         test     => 'hash chain',

@@ -5,7 +5,7 @@ use warnings;
 
 use Carp qw(croak);
 
-our $VERSION = '0.01_04';
+our $VERSION = '0.02';
 
 my $escape_ref = sub {
     my $string = shift;
@@ -69,13 +69,13 @@ __END__
 HTML::Template::Compiled::Plugin::I18N::DefaultTranslator
 - an extremly simple translater class for the HTC plugin I18N
 
-$Id: DefaultTranslator.pm 109 2009-07-21 05:11:15Z steffenw $
+$Id: DefaultTranslator.pm 124 2009-08-04 20:15:08Z steffenw $
 
 $HeadURL: https://htc-plugin-i18n.svn.sourceforge.net/svnroot/htc-plugin-i18n/trunk/lib/HTML/Template/Compiled/Plugin/I18N/DefaultTranslator.pm $
 
 =head1 VERSION
 
-0.01_04
+0.02
 
 =head1 SYNOPSIS
 

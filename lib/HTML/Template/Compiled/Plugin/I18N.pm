@@ -3,7 +3,7 @@ package HTML::Template::Compiled::Plugin::I18N;
 use strict;
 use warnings;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 use Carp qw(croak);
 use English qw(-no_match_vars $EVAL_ERROR);
@@ -33,13 +33,13 @@ sub _require_via_string {
     my $class = shift;
 
     eval "require $class" ## no critic (stringy eval)
-        or _throw("Can't find package $class $EVAL_ERROR");
+        or _throw("Can not find package $class $EVAL_ERROR");
 
     return $class;
 }
 
 sub init {
-    my ($class, %params) = @_;
+    my ($class, %arg_of) = @_;
 
     %escape_sub_of = (
         HTML     => \&HTML::Template::Compiled::Utils::escape_html,
@@ -50,7 +50,7 @@ sub init {
     );
 
     # get the escape subs for each plugin
-    my $escape_plugins = delete $params{escape_plugins};
+    my $escape_plugins = delete $arg_of{escape_plugins};
     if ($escape_plugins) {
         ref $escape_plugins eq 'ARRAY'
            or croak 'Parameter escape_plugins is not an array reference';
@@ -71,8 +71,8 @@ sub init {
     }
 
     # and all the other boolenans and strings
-    my @keys = keys %params;
-    @init{@keys} = @params{@keys};
+    my @keys = keys %arg_of;
+    @init{@keys} = @arg_of{@keys};
     $init{translator_class} ||= 'HTML::Template::Compiled::Plugin::I18N::DefaultTranslator';
     _require_via_string($init{translator_class});
 
@@ -164,11 +164,11 @@ sub _lookup_variable {
 }
 
 sub _calculate_escape {
-    my $params = shift;
+    my $arg_ref = shift;
 
     my @real_escapes;
     ESCAPE:
-    for my $escape ( @{ $params->{escapes} } ) {
+    for my $escape ( @{ $arg_ref->{escapes} } ) {
         if ($escape eq '0') {
             @real_escapes = ();
             next ESCAPE;
@@ -184,8 +184,8 @@ sub _calculate_escape {
         push @unknown_escapes, $escape;
     }
     # write back
-    if ( exists $params->{escape_ref} ) {
-        ${ $params->{escape_ref} } = \@real_escapes;
+    if ( exists $arg_ref->{escape_ref} ) {
+        ${ $arg_ref->{escape_ref} } = \@real_escapes;
     }
 
     return @unknown_escapes ? \@unknown_escapes : ();
@@ -226,10 +226,7 @@ sub TEXT { ## no critic (ExcessComplexity)
 
     my $attr_ref = $token->get_attributes();
     my $filename = $htc->get_filename();
-
-    # ATTENTION: $attr->{NAME} and $attr->{VAR} isn't mandatory
-    # but we we have to pass q{} instead of undef
-    # resolve var if existant (eg. <%TEXT a_var_dingens ...
+    my $package = __PACKAGE__;
 
     my %data = (
         filename => {
@@ -259,7 +256,7 @@ sub TEXT { ## no critic (ExcessComplexity)
                 # _n_ESCAPE
                 if ($is_escape) {
                     if ( exists $data_of_index->{escape} ) {
-                        _throw("error in template $filename can't use maktext escape position $position twice");
+                        _throw( qq{Error in template $filename, plugin $package. Can not use maktext escape position $position twice. $name="$attr_ref->{$name}"} );
                     }
                     $data_of_index->{escape}->{array}
                         = length $attr_ref->{$name}
@@ -269,7 +266,7 @@ sub TEXT { ## no critic (ExcessComplexity)
                 # _n, _n_VAR
                 else {
                     if ( exists $data_of_index->{data} ) {
-                        _throw("error in template $filename can't use maktext position $position twice");
+                        _throw( qq{Error in template $filename, plugin $package. Can not use maktext position $position twice. $name="$attr_ref->{$name}"} );
                     }
                     $data_of_index->{data} = {
                         is_variable => $is_variable,
@@ -292,7 +289,7 @@ sub TEXT { ## no critic (ExcessComplexity)
                 # _name_ESCAPE
                 if ($is_escape) {
                     if ( exists $data_of_key->{escape} ) {
-                        _throw("error in template $filename can't use gettext escape $key twice");
+                        _throw( qq{Error in template $filename, plugin $package. Can not use gettext escape $key twice. $name="$attr_ref->{$name}"} );
                     }
                     $data_of_key->{escape}->{array}
                         = length $attr_ref->{$name}
@@ -302,7 +299,7 @@ sub TEXT { ## no critic (ExcessComplexity)
                 # _name, _name_VAR
                 else {
                     if ( exists $data_of_key->{data} ) {
-                        _throw("error in template $filename can't use gettext key $key twice");
+                        _throw( qq{Error in template $filename, plugin $package. Can not use gettext key $key twice. $name="$attr_ref->{$name}"} );
                     }
                     $data_of_key->{data} = {
                         is_variable => $is_variable,
@@ -317,7 +314,7 @@ sub TEXT { ## no critic (ExcessComplexity)
                 = $name =~ m{\A PLURAL (_VAR)? \z}xms;
             if ($is_plural) {
                 if ( exists $data{plural} ) {
-                    _throw("error in template $filename can't use PLURAL/PLURAL_VAR twice");
+                    _throw( qq{Error in template $filename, plugin $package. Can not use PLURAL/PLURAL_VAR twice. $name="$attr_ref->{$name}"} );
                 }
                 $data{plural} = {
                     is_variable => $is_variable,
@@ -331,7 +328,7 @@ sub TEXT { ## no critic (ExcessComplexity)
                 = $name =~ m{\A COUNT (_VAR)? \z}xms;
             if ($is_count) {
                 if ( exists $data{count} ) {
-                    _throw("error in template $filename can't use COUNT/COUNT_VAR twice");
+                    _throw( qq{Error in template $filename, plugin $package. Can not use COUNT/COUNT_VAR twice. $name="$attr_ref->{$name}"} );
                 }
                 $data{count} = {
                     is_variable => $is_variable,
@@ -345,7 +342,7 @@ sub TEXT { ## no critic (ExcessComplexity)
                 = $name =~ m{\A CONTEXT (_VAR)? \z}xms;
             if ($is_context) {
                 if ( exists $data{context} ) {
-                    _throw("error in template $filename can't use CONTEXT/CONTEXT_VAR twice");
+                    _throw( qq{Error in template $filename, plugin $package. Can not use CONTEXT/CONTEXT_VAR twice. $name="$attr_ref->{$name}"} );
                 }
                 $data{context} = {
                     is_variable => $is_variable,
@@ -358,7 +355,7 @@ sub TEXT { ## no critic (ExcessComplexity)
             # FORMATTER
             if ( $name eq 'FORMATTER' ) {
                 if ( exists $data{formatter} ) {
-                    _throw("error in template $filename can't use FORMATTER twice");
+                    _throw( qq{Error in template $filename, plugin $package. Can not use FORMATTER twice. $name="$attr_ref->{$name}"} );
                 }
                 $data{formatter}->{array} = [
                     map {
@@ -392,11 +389,16 @@ sub TEXT { ## no critic (ExcessComplexity)
                 escape_ref => \$data_of_index->{escape},
             });
             if ($unknown_escapes) {
+                my $position  = $index + 1;
+                my $escapes   = join ', ', @{$unknown_escapes};
+                my $is_plural = @{$unknown_escapes} > 1;
                 _throw(
-                    "error in template $filename, maketext escape $index, unknown escape "
-                    . ( join ', ', @{$unknown_escapes} )
-                    . ' for HTC Plugin '
-                    . __PACKAGE__
+                    "Error in template $filename, plugin $package. "
+                    . (
+                        $is_plural
+                        ? "Maketext escapes $escapes at _${position}_ESCAPE are unknown."
+                        : "Maketext escape $escapes at _${position}_ESCAPE is unknown."
+                    )
                 );
             }
         }
@@ -423,11 +425,15 @@ sub TEXT { ## no critic (ExcessComplexity)
                 escape_ref => \$data_of_key->{escape},
             });
             if ($unknown_escapes) {
+                my $escapes   = join ', ', @{$unknown_escapes};
+                my $is_plural = @{$unknown_escapes} > 1;
                 _throw(
-                    "error in template $filename, gettext escape $key, unknown escape "
-                    . ( join ', ', @{$unknown_escapes} )
-                    . ' for HTC Plugin '
-                    . __PACKAGE__
+                    "Error in template $filename, plugin $package. "
+                    . (
+                        $is_plural
+                        ? "Gettext escapes $escapes at _${key}_ESCAPE are unknown."
+                        : "Gettext escape $escapes at _${key}_ESCAPE is unknown."
+                    )
                 );
             }
         }
@@ -439,9 +445,7 @@ sub TEXT { ## no critic (ExcessComplexity)
         ? (
             exists $attr_ref->{VALUE}
             ? _throw(
-                "error in template $filename: "
-                . q{you can't use NAME and VALUE at the same time for HTC Plugin }
-                . __PACKAGE__ . Data::Dumper::Dumper $attr_ref
+                qq{Error in template $filename, plugin $package. Do not use NAME and VALUE at the same time. NAME="$attr_ref->{NAME}" VALUE="$attr_ref->{VALUE}"}
             )
             : (
                 is_variable => 1,
@@ -466,17 +470,22 @@ sub TEXT { ## no critic (ExcessComplexity)
         escape_ref => \$data{escape}->{array},
     });
     if ($unknown_escapes) {
+        my $escapes   = join ', ', @{$unknown_escapes};
+        my $is_plural = @{$unknown_escapes} > 1;
         _throw(
-            "error in template $filename, unknown escape "
-            . ( join ', ', @{$unknown_escapes} )
-            . ' for HTC Plugin '
-            . __PACKAGE__
+            "Error in template $filename, plugin $package."
+            . (
+                $is_plural
+                ? "Escapes $escapes at ESCAPE are unknown."
+                : "Escape $escapes at ESCAPE is unknown."
+            )
         );
     }
     if ( exists $data{escape} && ! @{ $data{escape}->{array} } ) {
         delete $data{escape};
     }
 
+    # write code snippets
     my $escape_sub = sub {
         my ($data, $escape_ref) = @_;
 
@@ -484,8 +493,7 @@ sub TEXT { ## no critic (ExcessComplexity)
             return
                 $escape_ref
                 ? (
-                    __PACKAGE__
-                    . '::escape('
+                    qq{$package\::escape(}
                     . _lookup_variable($htc, $data->{value})
                     . q{,}
                     . (
@@ -587,9 +595,6 @@ sub TEXT { ## no critic (ExcessComplexity)
         : ();
     } keys %data;
 
-    # be careful in returns - they are double quoted strings.
-    # escape variable names, if you mean variables, do not qoute (but put
-    # quotes around) variables if you mean their content...
     return <<"EO_CODE";
 $arg_ref->{out} $init{translator_class}->translate({$inner_hash});
 EO_CODE
@@ -605,13 +610,13 @@ __END__
 
 HTML::Template::Compiled::Plugin::I18N - Internationalization for HTC
 
-$Id: I18N.pm 111 2009-07-21 06:40:42Z steffenw $
+$Id: I18N.pm 124 2009-08-04 20:15:08Z steffenw $
 
 $HeadURL: https://htc-plugin-i18n.svn.sourceforge.net/svnroot/htc-plugin-i18n/trunk/lib/HTML/Template/Compiled/Plugin/I18N.pm $
 
 =head1 VERSION
 
-0.01
+0.02
 
 =head1 SYNOPSIS
 
@@ -620,9 +625,9 @@ $HeadURL: https://htc-plugin-i18n.svn.sourceforge.net/svnroot/htc-plugin-i18n/tr
     package MyProjectTranslator;
 
     sub translate {
-        my ($class, $params) = @_;
+        my ($class, $arg_ref) = @_;
 
-        return $params->{text};
+        return $arg_ref->{text};
     }
 
 =head2 initialize plugin and then the template
@@ -656,7 +661,7 @@ Before you have written your own translator class,
 HTML::Template::Compiled::I18N::DefaultTranslator runs.
 
 Later you have to write a translator class
-to connect the plugin to your selected translation module.
+to join the plugin to your selected translation module.
 
 =head1 TEMPLATE SYNTAX
 
@@ -739,7 +744,7 @@ The 2nd parameter of the method translate (translator class) will set to:
     {
         text     => 'Hello [_1]!',
         maketext => [ qw( world ) ],
-        # escapes were handled already
+        # escapes processed already
     }
 
 =item * with a variable
@@ -753,8 +758,8 @@ The 2nd parameter of the method translate (translator class) will set to:
 
     {
         text     => 'Hello [_1]!',
-        maketext => [ $var->with()->the()->value() ],
-        # escapes were handled already
+        maketext => [ $var->with()->the()->value() ], # or $var->{with}->{the}->{value}
+        # escapes processed already
     }
 
 =item * mixed samples
@@ -787,7 +792,7 @@ The 2nd parameter of the method translate (translator class) will set to:
     {
         text    => 'Hello {name}!',
         gettext => { name => 'world' },
-        # escapes were handled already
+        # escapes processed already
     }
 
 =item * with a variable
@@ -802,7 +807,7 @@ The 2nd parameter of the method translate (translator class) will set to:
     {
         text    => 'Hello {name}!',
         gettext => { name => $var->with()->the()->value() },
-        # escapes were handled already
+        # escapes processed already
     }
 
 =item * plural forms with PLURAL, PLURAL_VAR, COUNT COUNT_VAR
@@ -813,6 +818,61 @@ The 2nd parameter of the method translate (translator class) will set to:
 
 =back
 
+=head2 escaping rules
+
+An escape can be a "0" to ignore all inherited escapes.
+It can be a single word like "HTML"
+or a list concatinated by "|" like "HTML|BR".
+
+=over
+
+=item * no extra escape set
+
+The default escape will be used for the value and the placeholders.
+
+    <%TEXT VALUE="..."%>
+    <%TEXT VALUE="..." _1="..."%>
+    <%TEXT VALUE="..." _name="..."%>
+
+=item * escape set
+
+A given escape ignores the default escape for the value and the placeholders.
+
+    <%TEXT VALUE="..." ESCAPE="..."%>
+    <%TEXT VALUE="..." _1="..."    ESCAPE="..."%>
+    <%TEXT VALUE="..." _name="..." ESCAPE="..."%>
+
+=item * placeholder escape set
+
+A given placeholder escape ignores the default escape and the escape.
+At example the default escape is 'DDD'.
+
+    <%TEXT VALUE="..." _1="..." _1_ESCAPE="PPP" _2="..."%>
+                  ^^^      ^^^                      ^^^
+    escape DDD ____|        |                        |
+    escape PPP _____________|                        |
+    escape DDD ______________________________________|
+
+    <%TEXT VALUE="..." _name1="..." _name1_ESCAPE="PPP" _name2="..."%>
+                  ^^^          ^^^                              ^^^
+    escape DDD ____|            |                                |
+    escape PPP _________________|                                |
+    escape DDD __________________________________________________|
+
+    <%TEXT VALUE="..." _1="..." _1_ESCAPE="PPP" _2="..." ESCAPE="EEE"%>
+                  ^^^      ^^^                      ^^^
+    escape EEE ____|        |                        |
+    escape PPP _____________|                        |
+    escape EEE ______________________________________|
+
+    <%TEXT VALUE="..." _name1="..." _name1_ESCAPE="PPP" _name2="..." ESCAPE="EEE"%>
+                  ^^^          ^^^                              ^^^
+    escape EEE ____|            |                                |
+    escape PPP _________________|                                |
+    escape EEE __________________________________________________|
+
+=back
+
 =head1 EXAMPLE
 
 Inside of this Distribution is a directory named example.
@@ -820,13 +880,15 @@ Run this *.pl files.
 
 =head1 SUBROUTINES/METHODS
 
-=cut head2 _require_via_string
+=cut head2 internal sub _require_via_string
 
-internal sub to classes late
+Internal sub to use classes late.
 
-=head2 init
+    my $class = _require_via_string($class);
 
-Call init before the HTML::Template::Compiled object will created.
+=head2 class method init
+
+Call init before the HTML::Template::Compiled->new(...) will called.
 
     # all parameters are optional
     HTML::Template::Compiled::Plugin::I18N->init(
@@ -844,27 +906,27 @@ Call init before the HTML::Template::Compiled object will created.
         )],
     );
 
-=cut head2 _throw
+=cut head2 internal sub _throw
 
 Internally used to throw exceptions.
 
     _throw(@message);
 
-=head2 register
+=head2 class method register
 
 HTML::Template::Compiled will call this method to register this plugin.
 
-    register($class);
+    HTML::Template::Compiled::Plugin::I18N->register();
 
 =cut
 
- =head2 _lookup_variable
+ =head2 internal sub _lookup_variable
 
 Internally used to get the real value.
 
     _lookup_variable($htc, $var_name);
 
- =head2 _calculate_escape
+ =head2 internal sub _calculate_escape
 
 Calculate the real escape using the default escape,
 the escape for the tag and
@@ -877,46 +939,158 @@ the escape for the placeholder.
 
 $unknown_escapes is undef or an array_ref.
 
- =head2 _escape
+ =head2 internal sub _escape
 
 Internally used to run the escapeing.
 
     $escaped_string = _escape($string, $escape_array_ref);
 
-=head2 escape
+=head2 sub escape
 
 Called from compiled code only.
 
-    $escaped_string
-        = HTML::Template::Compiled::Plugin::I18N::escape($string, @escapes);
+    $escaped_string = HTML::Template::Compiled::Plugin::I18N::escape(
+        $string,
+        @escapes,
+    );
 
-=cut
-
- =head2 _escape_and_set_quotes
+=cut head2 _escape_and_set_quotes
 
 Internally used to build values as code snippets.
 
     $quoted_string = _escape_and_set_quotes($string);
 
-=head2 TEXT
+=head2 sub TEXT
 
 Do not call this method.
 It is used to create the HTC Template Code.
-This method is used as callback which is registerd to HTML::Template::Compiled
-by our register method.
+This method is used as callback
+which is registerd to HTML::Template::Compiled by our register method.
 
 It calls the translate method of the Translator class 'TranslatorClassNames'.
 
 The translate method will called like
 
-    $translator = TranslatorClass->new()->translate({
+    $translated = TranslatorClass->new()->translate({
         text => 'result of variable lookup or VALUE',
         ...
     });
 
 =head1 DIAGNOSTICS
 
-none
+=over
+
+=item * missing escape plugin or translator class
+
+Can not find package ...
+
+=back
+
+=head2 text
+
+=over
+
+=item * select NAME or VALUE
+
+Error in template filename, plugin package.
+Do not use NAME and VALUE at the same time.
+NAME="..."
+VALUE="..."
+
+=item * escape plugin is not configured at method init
+
+Error in template filename, plugin package.
+Escape ... at ESCAPE is unknown.
+
+=back
+
+=head2 maketext
+
+=over
+
+=item * double maketext placeholder
+
+Error in template filename, plugin package.
+Can not use maktext position n twice.
+_n="..."
+
+=item * double maketext placeholder escape
+
+Error in template filename, plugin package.
+Can not use maktext escape position n twice.
+_n_ESCAPE="..."
+
+=item * escape plugin is not configured at method init
+
+Error in template filename, plugin package.
+Maketext escape ... at _n_ESCAPE is unknown.
+
+=back
+
+=head2 gettext
+
+=over
+
+=item * double gettext palaceholder
+
+Error in template filename, plugin package.
+Can not use gettext key name twice.
+_name="..."
+
+=item * double gettext placeholder escape
+
+Error in template filename, plugin package.
+Can not use gettext escape name twice.
+_name_ESCAPE="..."
+
+=item * escape plugin is not configured at method init
+
+Error in template filename, plugin package.
+Gettext escape ... at _name_ESCAPE is unknown.
+
+=item * double gettext plural
+
+Error in template filename, plugin package.
+Can not use PLURAL/PLURAL_VAR twice.
+PLURAL="..."
+
+or
+
+Error in template filename, plugin package.
+Can not use PLURAL/PLURAL_VAR twice.
+PLURAL_VAR="..."
+
+=item * double gettext count
+
+Error in template filename, plugin package.
+Can not use COUNT/COUNT_VAR twice.
+COUNT="..."
+
+or
+
+Error in template filename, plugin package.
+Can not use COUNT/COUNT_VAR twice.
+COUNT_VAR="..."
+
+=item * double gettext context
+
+Error in template filename, plugin package.
+Can not use CONTEXT/CONTEXT_VAR twice.
+CONTEXT="..."
+
+or
+
+Error in template filename, plugin package.
+Can not use CONTEXT/CONTEXT_VAR twice.
+CONTEXT_VAR="..."
+
+=item * double formatter
+
+Error in template filename, plugin package.
+Can not use FORMATTER twice.
+FORMATTER="..."
+
+=back
 
 =head1 CONFIGURATION AND ENVIRONMENT
 
