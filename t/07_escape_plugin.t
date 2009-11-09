@@ -18,12 +18,12 @@ HTML::Template::Compiled::Plugin::I18N->init(
 my @data = (
     {
         test     => 'escape XML',
-        template => '<%TEXT VALUE="<>" ESCAPE=XML%>',
+        template => '<%TEXT VALUE="<>" ESCAPE=XmL%>',
         result   => 'text=&#x3C;&#x3E;',
     },
     {
         test     => 'escape XML_ATTR',
-        template => '<%TEXT VALUE="<>" ESCAPE=XML_ATTR%>',
+        template => '<%TEXT VALUE="<>" ESCAPE=XmL_ATTR%>',
         result   => 'text=&#x3C;&#x3E;',
     },
 );

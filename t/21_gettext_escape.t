@@ -25,29 +25,29 @@ HTML::Template::Compiled::Plugin::I18N->init(allow_gettext => 1);
 my @data = (
     {
         test     => 'gettext, escape HTML for the placeholder',
-        template => '<%TEXT VALUE="text<1>" _name="<>" _name_ESCAPE="HTML"%>',
+        template => '<%TEXT VALUE="text<1>" _name="<>" _name_ESCAPE="HtMl"%>',
         result   => 'text=text<1>;gettext=name,&lt;&gt;',
     },
     {
         test     => 'gettext, escape HTML but not for the placeholder',
-        template => '<%TEXT VALUE="text<2>" _name="<>" _name_ESCAPE="0" ESCAPE=HTML%>',
+        template => '<%TEXT VALUE="text<2>" _name="<>" _name_ESCAPE="0" ESCAPE=HtMl%>',
         result   => 'text=text&lt;2&gt;;gettext=name,<>',
     },
     {
         test     => 'gettext, escape URI for the placeholder var',
-        template => '<%TEXT VALUE="text<3>" _name_VAR="value1" _name_ESCAPE="URI"%>',
+        template => '<%TEXT VALUE="text<3>" _name_VAR="value1" _name_ESCAPE="UrI"%>',
         params   => {value1 =>'<>'},
         result   => 'text=text<3>;gettext=name,%3C%3E',
     },
     {
         test     => 'gettext, escape URI but not for the placeholder var',
-        template => '<%TEXT VALUE="text<4>" _name_VAR="value1" _name_ESCAPE="0" ESCAPE=URI%>',
+        template => '<%TEXT VALUE="text<4>" _name_VAR="value1" _name_ESCAPE="0" ESCAPE=UrI%>',
         params   => {value1 =>'<>'},
         result   => 'text=text%3C4%3E;gettext=name,<>',
     },
 #    {
 #        test      => 'gettext, unknown escape',
-#        template  => '<%TEXT VALUE="text5" _name="<>" _name_ESCAPE="XXX"%>',
+#        template  => '<%TEXT VALUE="text5" _name="<>" _name_ESCAPE="XxX"%>',
 #        exception => qr{\Qunknown escape XXX}xms,
 #    },
 );

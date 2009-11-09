@@ -97,7 +97,7 @@ my @data = (
 #    },
 #    {
 #        test      => 'no formatter',
-#        template  => '<%TEXT "no maketext" ESCAPE=formatter1%>',
+#        template  => '<%TEXT "no maketext" ESCAPE=FoRmAtTeR1%>',
 #        exception => qr{\QSyntax error in <TMPL_*>}xms,
 #    },
 );

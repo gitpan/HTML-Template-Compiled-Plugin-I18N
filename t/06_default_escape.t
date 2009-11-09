@@ -34,17 +34,17 @@ my @data = (
     },
     {
         test     => 'escape URI',
-        template => '<%TEXT VALUE="text<3>" ESCAPE=URI%>',
+        template => '<%TEXT VALUE="text<3>" ESCAPE=UrI%>',
         result   => 'text=text%3C3%3E',
     },
     {
         test     => 'escape DUMP',
-        template => '<%TEXT VALUE="text<4>" ESCAPE=DUMP%>',
+        template => '<%TEXT VALUE="text<4>" ESCAPE=DuMp%>',
         result   => "text=\$VAR1 = 'text<4>';\n",
     },
     {
         test     => 'escape DUMP|HTML',
-        template => '<%TEXT VALUE="text<5>" ESCAPE=DUMP|HTML%>',
+        template => '<%TEXT VALUE="text<5>" ESCAPE=DuMp|HtMl%>',
         result   => "text=\$VAR1 = &#39;text&lt;5&gt;&#39;;\n",
     },
 );

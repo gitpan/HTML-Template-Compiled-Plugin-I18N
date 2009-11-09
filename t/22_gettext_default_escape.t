@@ -34,18 +34,18 @@ my @data = (
     },
     {
         test     => 'gettext, escape URI but not for the placeholder',
-        template => '<%TEXT VALUE="text<2>" _name="<>" _name_ESCAPE="HTML" ESCAPE=URI%>',
+        template => '<%TEXT VALUE="text<2>" _name="<>" _name_ESCAPE="HtMl" ESCAPE=UrI%>',
         result   => 'text=text%3C2%3E;gettext=name,&lt;&gt;',
     },
     {
         test     => 'gettext, escape URI for the placeholder var too',
-        template => '<%TEXT VALUE="text<3>" _name_VAR="value1" ESCAPE="URI"%>',
+        template => '<%TEXT VALUE="text<3>" _name_VAR="value1" ESCAPE="UrI"%>',
         params   => {value1 =>'<>'},
         result   => 'text=text%3C3%3E;gettext=name,%3C%3E',
     },
     {
         test     => 'gettext, escape URI but for the Placeholder HTML|DUMP',
-        template => '<%TEXT VALUE="text<4>" _name_VAR="value1" _name_ESCAPE="HTML|DUMP" ESCAPE=URI%>',
+        template => '<%TEXT VALUE="text<4>" _name_VAR="value1" _name_ESCAPE="HtMl|DuMp" ESCAPE=UrI%>',
         params   => {value1 =>'<>'},
         result   => "text=text%3C4%3E;gettext=name,\$VAR1 = '&lt;&gt;';\n",
     },
