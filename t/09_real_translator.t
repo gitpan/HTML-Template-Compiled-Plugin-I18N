@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 5 + 1;
+use Test::More tests => 7 + 1;
 use Test::NoWarnings;
 
 use lib qw(./t/lib);
@@ -20,24 +20,47 @@ HTML::Template::Compiled::Plugin::I18N->init(
 
 my @data = (
     {
-        test     => 'test translator class',
+        test     => 'test translator class (en)',
         prepare  => sub {
             HTML::Template::Compiled::Plugin::I18N::TestTranslator
                 ->new()
                 ->set_language('en');
         },
-        template => '<%TEXT VALUE="Hello world!"%>',
-        result   => 'Hello world!',
+        template => '<%TEXT VALUE="Hello <world>!"%>',
+        result   => 'Hello <world>!',
     },
     {
-        test     => 'test translator class',
+        test     => 'test translator class (de)',
         prepare  => sub {
             HTML::Template::Compiled::Plugin::I18N::TestTranslator
                 ->new()
                 ->set_language('de');
         },
-        template => '<%TEXT VALUE="Hello world!"%>',
-        result   => 'Hallo Welt!',
+        template => '<%TEXT VALUE="Hello <world>!"%>',
+        result   => 'Hallo <Welt>!',
+    },
+    {
+        test     => 'escape text',
+        prepare  => sub {
+            $TEST::TEST = 1;
+            HTML::Template::Compiled::Plugin::I18N::TestTranslator
+                ->new()
+                ->set_language('de');
+        },
+        template => '<%TEXT VALUE="Hello <world>!" ESCAPE="HtMl"%>',
+        result   => 'Hallo &lt;Welt&gt;!',
+    },
+    {
+        test     => 'escape var',
+        prepare  => sub {
+            $TEST::TEST = 1;
+            HTML::Template::Compiled::Plugin::I18N::TestTranslator
+                ->new()
+                ->set_language('de');
+        },
+        template => '<%TEXT NAME="var" ESCAPE="HtMl"%>',
+        params   => { var => 'Hello <world>!' },
+        result   => 'Hallo &lt;Welt&gt;!',
     },
 );
 

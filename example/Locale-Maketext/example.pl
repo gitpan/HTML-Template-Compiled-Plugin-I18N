@@ -14,6 +14,7 @@ use Example::Translator;
 
 HTML::Template::Compiled::Plugin::I18N->init(
     allow_maketext   => 1,
+    allow_unescaped  => 1,
     translator_class => 'Example::Translator',
 );
 
@@ -21,8 +22,12 @@ my $htc = HTML::Template::Compiled->new(
     plugin    => [qw(HTML::Template::Compiled::Plugin::I18N)],
     tagstyle  => [qw(-classic -comment +asp)],
     scalarref => \<<'EOT');
-<%TEXT VALUE="[_1] is programming [_2]." _1="Steffen" _2_VAR="language"%>
-<%TEXT VALUE="This is the [_1]link[_2]." _1="<a href=http://www.perl.org/>" _1_ESCAPE="0" _2="</a>" _2_ESCAPE="0" ESCAPE="HTML"%>
+* placeholder
+  <%TEXT VALUE="[_1] is programming <[_2]>." _1="Steffen" _2_VAR="language"%>
+* placeholder and escape
+  <%TEXT VALUE="[_1] is programming <[_2]>." _1="Steffen" _2_VAR="language" ESCAPE="HTML"%>
+* unescaped placeholder
+  <%TEXT VALUE="This is the {link_begin}<link>{link_end}." UNESCAPED_link_begin="<a href=http://www.perl.org/>" UNESCAPED_link_end="</a>" ESCAPE="HTML"%>
 
 EOT
 $htc->param(
@@ -43,8 +48,16 @@ __END__
 
 Output:
 
-Steffen is programming Perl.
-This is the <a href=http://www.perl.org/>link</a>.
+* placeholder
+  Steffen is programming <Perl>.
+* placeholder and escape
+  Steffen is programming &lt;Perl&gt;.
+* unescaped placeholder
+  This is the <a href=http://www.perl.org/>&lt;link&gt;</a>.
 
-Steffen programmiert Perl.
-Das ist der <a href=http://www.perl.org/>Link</a>.
+* placeholder
+  Steffen programmiert <Perl>.
+* placeholder and escape
+  Steffen programmiert &lt;Perl&gt;.
+* unescaped placeholder
+  Das ist der <a href=http://www.perl.org/>&lt;Link&gt;</a>.

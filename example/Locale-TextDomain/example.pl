@@ -14,6 +14,7 @@ use Example::Translator;
 
 HTML::Template::Compiled::Plugin::I18N->init(
     allow_gettext    => 1,
+    allow_unescaped  => 1,
     translator_class => 'Example::Translator',
 );
 
@@ -22,9 +23,11 @@ my $htc = HTML::Template::Compiled->new(
     tagstyle  => [qw(-classic -comment +asp)],
     scalarref => \<<'EOT');
 * placeholder
-  <%TEXT VALUE="{name} is programming {language}." _name="Steffen" _language_VAR="language"%>
-* different placeholder escape
-  <%TEXT VALUE="This is the {link_begin}link{link_end}." _link_begin="<a href=http://www.perl.org/>" _link_begin_ESCAPE="0" _link_end="</a>" _link_end_ESCAPE="0" ESCAPE="HTML"%>
+  <%TEXT VALUE="{name} is programming <{language}>." _name="Steffen" _language_VAR="language"%>
+* placeholder and escape
+  <%TEXT VALUE="{name} is programming <{language}>." _name="Steffen" _language_VAR="language" ESCAPE="HTML"%>
+* unescaped placeholder
+  <%TEXT VALUE="This is the {link_begin}<link>{link_end}." UNESCAPED_link_begin="<a href=http://www.perl.org/>" UNESCAPED_link_end="</a>" ESCAPE="HTML"%>
 * no context
   <%TEXT VALUE="Context?"%>
 * context
@@ -33,8 +36,8 @@ my $htc = HTML::Template::Compiled->new(
   <%TEXT VALUE="shelf" PLURAL="shelves" COUNT="1"%>
   <%TEXT VALUE="shelf" PLURAL="shelves" COUNT="2"%>
 * context and plural
-  <%TEXT VALUE="shelf" PLURAL="shelves" COUNT="1" CONTEXT="better"%>
-  <%TEXT VALUE="shelf" PLURAL="shelves" COUNT="2" CONTEXT="better"%>
+  <%TEXT VALUE="shelf<>" PLURAL="shelve<s>" COUNT="1" CONTEXT="better"%>
+  <%TEXT VALUE="shelf<>" PLURAL="shelve<s>" COUNT="2" CONTEXT="better"%>
 
 EOT
 $htc->param(
@@ -57,8 +60,8 @@ Output:
 
 * placeholder
   Steffen is programming Perl.
-* different placeholder escape
-  This is the <a href=http://www.perl.org/>link</a>.
+* unescaped placeholder
+  This is the <a href=http://www.perl.org/>&lt;link&gt;</a>.
 * no context
   No context.
 * context
@@ -67,13 +70,13 @@ Output:
   shelf
   shelves
 * context and plural
-  good shelf
-  good shelves
+  good shelf<>
+  good shelve<s>
 
 * placeholder
   Steffen programmiert Perl.
 * different placeholder escape
-  Das ist der <a href=http://www.perl.org/>Link</a>.
+  Das ist der <a href=http://www.perl.org/>&lt;Link&gt;</a>.
 * no context
   Kein Kontext.
 * context
@@ -82,5 +85,5 @@ Output:
   Regal
   Regale
 * context and plural
-  gutes Regal
-  gute Regale
+  gutes Regal<>
+  gute Regal<e>

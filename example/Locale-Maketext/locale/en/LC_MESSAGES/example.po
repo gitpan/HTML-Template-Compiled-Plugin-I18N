@@ -9,9 +9,9 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-msgid "%1 is programming %2."
-msgstr "%1 is programming %2."
+msgid "%1 is programming <%2>."
+msgstr "%1 is programming <%2>."
 
-msgid "This is the %1link%2."
-msgstr "This is the %1link%2."
+msgid "This is the {link_begin}<link>{link_end}."
+msgstr "This is the {link_begin}<link>{link_end}."
 

@@ -1,5 +1,14 @@
 Revision history for Perl extension HTML::Template::Compiled::Plugin::I18N.
 
+1.00  Wed Nov 18 22:00:00 2009
+- API changed.
+  Placeholder escapes are a very bad idea.
+  Now the first step is the translation.
+  During the translation placeholders (maketext/gettext) are expanded.
+  The second step is the escaping of the translated string.
+  Then the formatter should run.
+  At least expand the unescaped placeholders. 
+
 0.03  Mon Nov  9 10:00:00 2009
 - no case sensitive escapes 
   (accept all notations, process as upper case) 

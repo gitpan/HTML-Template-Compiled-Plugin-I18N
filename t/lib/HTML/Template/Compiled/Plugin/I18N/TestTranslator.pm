@@ -4,12 +4,13 @@ use strict;
 use warnings;
 
 use Carp qw(croak);
+use HTML::Template::Compiled::Plugin::I18N;
 # in mod_perl environment use Apache::Singleton::Request
 use parent qw(Class::Singleton);
 
 my %lexicon = (
     de => {
-        'Hello world!' => 'Hallo Welt!',
+        'Hello <world>!' => 'Hallo <Welt>!',
     },
 );
 
@@ -37,7 +38,7 @@ sub get_language {
 }
 
 sub translate {
-    my ($class, $params) = @_;
+    my ($class, $arg_ref) = @_;
 
     my $self = $class->new();
 
@@ -46,11 +47,23 @@ sub translate {
         exists $lexicon{$language}
             or last SEARCH;
         my $lexicon_of_language = $lexicon{$language};
-        exists $lexicon_of_language->{ $params->{text} }
-            and return $lexicon_of_language->{ $params->{text} };
+        $arg_ref->{text}
+            or last SEARCH;
+        exists $lexicon_of_language->{ $arg_ref->{text} }
+            or last SEARCH;
+        my $translation = $lexicon_of_language->{ $arg_ref->{text} }
+            or return 'undef';
+        if ( exists $arg_ref->{escape} ) {
+            $translation = HTML::Template::Compiled::Plugin::I18N->escape(
+                $translation,
+                $arg_ref->{escape},
+            );
+        }
+
+        return $translation;
     }
 
-    return $params->{text};
+    return $arg_ref->{text};
 }
 
 1;

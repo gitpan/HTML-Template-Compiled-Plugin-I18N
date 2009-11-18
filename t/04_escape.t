@@ -49,7 +49,7 @@ my @data = (
 #    {
 #        test      => 'unknown escape',
 #        template  => '<%TEXT VALUE="mytext" ESCAPE=XxX%>',
-#        exception => qr{\Qunknown escape XXX}xms,
+#        exception => qr{\Qunknown escape XxX}xms,
 #    },
 );
 

@@ -4,8 +4,9 @@ use strict;
 use warnings;
 
 use Carp qw(croak);
+use HTML::Template::Compiled::Plugin::I18N;
 
-our $VERSION = '0.02';
+our $VERSION = '1.00';
 
 my $escape_ref = sub {
     my $string = shift;
@@ -33,12 +34,50 @@ sub get_escape {
 sub translate {
     my (undef, $attr_ref) = @_;
 
+    my $escape
+        = exists $attr_ref->{escape}
+        ? delete $attr_ref->{escape}
+        : ();
+    if ( defined $escape ) {
+        ESCAPE:
+        for ( qw(text plural) ) {
+            exists $attr_ref->{$_}
+                or next ESCAPE;
+            $attr_ref->{$_} = HTML::Template::Compiled::Plugin::I18N->escape(
+                $attr_ref->{$_},
+                $escape,
+            );
+        }
+        ESCAPE:
+        for ( qw(maketext) ) {
+            exists $attr_ref->{$_}
+                or next ESCAPE;
+            for my $value ( @{ $attr_ref->{$_} } ) {
+                $value = HTML::Template::Compiled::Plugin::I18N->escape(
+                    $value,
+                    $escape,
+                );
+            }
+        }
+        ESCAPE:
+        for ( qw(gettext) ) {
+            exists $attr_ref->{$_}
+                or next ESCAPE;
+            for my $value ( values %{ $attr_ref->{$_} } ) {
+                $value = HTML::Template::Compiled::Plugin::I18N->escape(
+                    $value,
+                    $escape,
+                );
+            }
+        }
+    }
+
     return join q{;}, map {
         exists $attr_ref->{$_}
         ? (
             "$_="
             . join q{,}, map {
-                $escape_ref->($_);
+                get_escape()->($_);
             } (
                 ref $attr_ref->{$_} eq 'ARRAY'
                 ? @{ $attr_ref->{$_} }
@@ -54,7 +93,7 @@ sub translate {
         )
         : ();
     } qw(
-        context text plural maketext count gettext formatter
+        context text plural count maketext gettext formatter unescaped
     );
 }
 
@@ -69,13 +108,13 @@ __END__
 HTML::Template::Compiled::Plugin::I18N::DefaultTranslator
 - an extremly simple translater class for the HTC plugin I18N
 
-$Id: DefaultTranslator.pm 124 2009-08-04 20:15:08Z steffenw $
+$Id: DefaultTranslator.pm 150 2009-11-18 20:33:13Z steffenw $
 
 $HeadURL: https://htc-plugin-i18n.svn.sourceforge.net/svnroot/htc-plugin-i18n/trunk/lib/HTML/Template/Compiled/Plugin/I18N/DefaultTranslator.pm $
 
 =head1 VERSION
 
-0.02
+1.00
 
 =head1 SYNOPSIS
 
@@ -84,7 +123,8 @@ $HeadURL: https://htc-plugin-i18n.svn.sourceforge.net/svnroot/htc-plugin-i18n/tr
 This module is very useful to run the application
 before the translator module has finished.
 
-The output string is human readable.
+The output string is human readable
+except the escape callback sub.
 
 =head1 SUBROUTINES/METHODS
 
@@ -114,7 +154,8 @@ Get back the current escape code reference.
 =head2 class method translate
 
 Possible hash keys are
-context, text, plural, maketext, count, gettext and formatter.
+context, text, plural, maketext, count, gettext, formatter and escape_code.
+The last one is to escape text and plural after translation.
 
     $string
         = HTML::Template::Compiled::Plugin::I18N::DefaultTranslator->translate({

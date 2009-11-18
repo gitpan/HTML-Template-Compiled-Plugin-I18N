@@ -10,7 +10,7 @@ BEGIN {
     plan skip_all => "HTML::Entities required for testing ESCAPE=HTML; $EVAL_ERROR" if $EVAL_ERROR;
     eval 'use URI::Escape';
     plan skip_all => "URI::Escape required for testing ESCAPE=URI; $EVAL_ERROR" if $EVAL_ERROR;
-    plan tests => 7 + 1;
+    plan tests => 3 + 1;
 }
 use Test::NoWarnings;
 
@@ -19,35 +19,16 @@ BEGIN {
     use_ok('HTML::Template::Compiled::Plugin::I18N');
 }
 
-HTML::Template::Compiled::Plugin::I18N->init(allow_gettext => 1);
+HTML::Template::Compiled::Plugin::I18N->init(
+    allow_gettext   => 1,
+    allow_unescaped => 1,
+);
 
 my @data = (
     {
-        test     => 'gettext, escape HTML for the placeholder',
-        template => '<%TEXT VALUE="text<1>" _name="<>"%>',
-        result   => 'text=text&lt;1&gt;;gettext=name,&lt;&gt;',
-    },
-    {
-        test     => 'gettext, escape 0 for the placeholder',
-        template => '<%TEXT VALUE="text<2>" _name="<>" _name_ESCAPE=0%>',
-        result   => 'text=text&lt;2&gt;;gettext=name,<>',
-    },
-    {
-        test     => 'gettext, escape URI but not for the placeholder',
-        template => '<%TEXT VALUE="text<2>" _name="<>" _name_ESCAPE="HtMl" ESCAPE=UrI%>',
-        result   => 'text=text%3C2%3E;gettext=name,&lt;&gt;',
-    },
-    {
-        test     => 'gettext, escape URI for the placeholder var too',
-        template => '<%TEXT VALUE="text<3>" _name_VAR="value1" ESCAPE="UrI"%>',
-        params   => {value1 =>'<>'},
-        result   => 'text=text%3C3%3E;gettext=name,%3C%3E',
-    },
-    {
-        test     => 'gettext, escape URI but for the Placeholder HTML|DUMP',
-        template => '<%TEXT VALUE="text<4>" _name_VAR="value1" _name_ESCAPE="HtMl|DuMp" ESCAPE=UrI%>',
-        params   => {value1 =>'<>'},
-        result   => "text=text%3C4%3E;gettext=name,\$VAR1 = '&lt;&gt;';\n",
+        test     => 'gettext, escape HTML and unescaped placeholder',
+        template => '<%TEXT VALUE="text <1> {name} {value}" _name="<>" UNESCAPED_value="<value>"%>',
+        result   => 'text=text &lt;1&gt; {name} {value};gettext=name,&lt;&gt;;unescaped=value,<value>',
     },
 );
 

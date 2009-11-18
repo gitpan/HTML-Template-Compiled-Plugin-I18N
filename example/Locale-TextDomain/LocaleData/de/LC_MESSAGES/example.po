@@ -11,12 +11,12 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 
 # placeholder
-msgid "{name} is programming {language}."
-msgstr "{name} programmiert {language}."
+msgid "{name} is programming <{language}>."
+msgstr "{name} programmiert <{language}>."
 
 # different placeholder escape
-msgid "This is the {link_begin}link{link_end}."
-msgstr "Das ist der {link_begin}Link{link_end}."
+msgid "This is the {link_begin}<link>{link_end}."
+msgstr "Das ist der {link_begin}<Link>{link_end}."
 
 # no context
 msgid "Context?"
@@ -35,8 +35,8 @@ msgstr[1] "Regale"
 
 # context and plural
 msgctxt "better"
-msgid "shelf"
-msgid_plural "shelves"
-msgstr[0] "gutes Regal"
-msgstr[1] "gute Regale"
+msgid "shelf<>"
+msgid_plural "shelve<s>"
+msgstr[0] "gutes Regal<>"
+msgstr[1] "gute Regal<e>"
 

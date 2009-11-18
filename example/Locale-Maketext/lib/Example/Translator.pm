@@ -6,9 +6,12 @@ use warnings;
 our $VERSION = 0;
 
 use Carp qw(croak);
+
 # in mod_perl environment use Apache::Singleton::Request
 use parent qw(Class::Singleton);
+
 use Example::I18N;
+use HTML::Template::Compiled::Plugin::I18N;
 
 my %lh_of; # cache for the language handles
 
@@ -53,18 +56,32 @@ sub get_lh {
 }
 
 sub translate {
-    my ($class, $params) = @_;
+    my ($class, $arg_ref) = @_;
 
     my $lh = __PACKAGE__->new()->get_lh();
 
-    return $lh->maketext(
-        $params->{text},
+    my $translation =  $lh->maketext(
+        $arg_ref->{text},
         (
-            exists $params->{maketext}
-            ? @{ $params->{maketext} }
+            exists $arg_ref->{maketext}
+            ? @{ $arg_ref->{maketext} }
             : ()
-        )
+        ),
     );
+    if ( exists $arg_ref->{escape} ) {
+        $translation = HTML::Template::Compiled::Plugin::I18N->escape(
+            $translation,
+            $arg_ref->{escape},
+        );
+    }
+    if ( exists $arg_ref->{unescaped} ) {
+        $translation = HTML::Template::Compiled::Plugin::I18N->expand_unescaped(
+            $translation,
+            $arg_ref->{unescaped},
+        );
+    }
+
+    return $translation;
 }
 
 1;

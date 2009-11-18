@@ -27,11 +27,19 @@ EOT
         path   => 'example/Locale-Maketext',
         script => 'example.pl',
         result => <<'EOT',
-Steffen is programming Perl.
-This is the <a href=http://www.perl.org/>link</a>.
+* placeholder
+  Steffen is programming <Perl>.
+* placeholder and escape
+  Steffen is programming &lt;Perl&gt;.
+* unescaped placeholder
+  This is the <a href=http://www.perl.org/>&lt;link&gt;</a>.
 
-Steffen programmiert Perl.
-Das ist der <a href=http://www.perl.org/>Link</a>.
+* placeholder
+  Steffen programmiert <Perl>.
+* placeholder and escape
+  Steffen programmiert &lt;Perl&gt;.
+* unescaped placeholder
+  Das ist der <a href=http://www.perl.org/>&lt;Link&gt;</a>.
 
 EOT
     },
@@ -41,9 +49,11 @@ EOT
         script => 'example.pl',
         result => <<'EOT',
 * placeholder
-  Steffen is programming Perl.
-* different placeholder escape
-  This is the <a href=http://www.perl.org/>link</a>.
+  Steffen is programming <Perl>.
+* placeholder and escape
+  Steffen is programming &lt;Perl&gt;.
+* unescaped placeholder
+  This is the <a href=http://www.perl.org/>&lt;link&gt;</a>.
 * no context
   No context.
 * context
@@ -52,13 +62,15 @@ EOT
   shelf
   shelves
 * context and plural
-  good shelf
-  good shelves
+  good shelf<>
+  good shelve<s>
 
 * placeholder
-  Steffen programmiert Perl.
-* different placeholder escape
-  Das ist der <a href=http://www.perl.org/>Link</a>.
+  Steffen programmiert <Perl>.
+* placeholder and escape
+  Steffen programmiert &lt;Perl&gt;.
+* unescaped placeholder
+  Das ist der <a href=http://www.perl.org/>&lt;Link&gt;</a>.
 * no context
   Kein Kontext.
 * context
@@ -67,8 +79,8 @@ EOT
   Regal
   Regale
 * context and plural
-  gutes Regal
-  gute Regale
+  gutes Regal<>
+  gute Regal<e>
 
 EOT
     },

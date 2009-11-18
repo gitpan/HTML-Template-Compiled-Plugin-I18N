@@ -3,7 +3,7 @@ package HTML::Template::Compiled::Plugin::I18N;
 use strict;
 use warnings;
 
-our $VERSION = '0.03';
+our $VERSION = '1.00';
 
 use Carp qw(croak);
 use English qw(-no_match_vars $EVAL_ERROR);
@@ -23,6 +23,7 @@ BEGIN {
             allow_maketext
             allow_gettext
             allow_formatter
+            allow_unescaped
             translator_class
             escape_plugins
         ),
@@ -38,9 +39,11 @@ sub _require_via_string {
     return $class;
 }
 
+# class method
 sub init {
     my ($class, %arg_of) = @_;
 
+    # This escape plugins are already loaded.
     %escape_sub_of = (
         HTML     => \&HTML::Template::Compiled::Utils::escape_html,
         HTML_ALL => \&HTML::Template::Compiled::Utils::escape_html_all,
@@ -49,12 +52,13 @@ sub init {
         DUMP     => \&Dumper,
     );
 
-    # get the escape subs for each plugin
+    # Get the escape subs for each plugin ...
     my $escape_plugins = delete $arg_of{escape_plugins};
     if ($escape_plugins) {
         ref $escape_plugins eq 'ARRAY'
            or croak 'Parameter escape_plugins is not an array reference';
         for my $package ( @{$escape_plugins} ) {
+            # register plugins
             my %escape = %{ _require_via_string($package)->register()->{escape} };
             SUB:
             for my $sub ( values %escape ) {
@@ -70,17 +74,21 @@ sub init {
         }
     }
 
-    # and all the other boolenans and strings
+    # ... and all the other boolenans and strings.
     my @keys = keys %arg_of;
     @init{@keys} = @arg_of{@keys};
+
+    # Load the translator class.
     $init{translator_class} ||= 'HTML::Template::Compiled::Plugin::I18N::DefaultTranslator';
     _require_via_string($init{translator_class});
 
+    # Register this plugin at HTC.
     HTML::Template::Compiled->register(__PACKAGE__);
 
     return $class;
 }
 
+# internal exception handler
 sub _throw {
     my @message = @_;
 
@@ -90,6 +98,7 @@ sub _throw {
         : croak @message;
 }
 
+# Register this plugin at HTC.
 sub register {
     my ($class) = @_;
 
@@ -110,7 +119,6 @@ sub register {
                         ? qw(
                             _\d+
                             _\d+_VAR
-                            _\d+_ESCAPE
                         )
                         : ()
                     ),
@@ -125,7 +133,6 @@ sub register {
                             CONTEXT_VAR
                             _[A-Z][0-9A-Z_]*?
                             _[A-Z][0-9A-Z_]*?_VAR
-                            _[A-Z][0-9A-Z_]*?_ESCAPE
                         )
                         : ()
                     ),
@@ -133,6 +140,14 @@ sub register {
                         $init{allow_formatter}
                         ? qw(
                             FORMATTER
+                        )
+                        : ()
+                    ),
+                    (
+                        $init{allow_unescaped}
+                        ? qw(
+                            UNESCAPED_[A-Z][0-9A-Z_]*?
+                            UNESCAPED_[A-Z][0-9A-Z_]*?_VAR
                         )
                         : ()
                     ),
@@ -169,13 +184,14 @@ sub _calculate_escape {
     my @real_escapes;
     ESCAPE:
     for my $escape ( @{ $arg_ref->{escapes} } ) {
+        # a '0' ignores all before
         if ($escape eq '0') {
             @real_escapes = ();
             next ESCAPE;
         }
         push @real_escapes, $escape;
     }
-    # check errors
+    # uc escape if no error
     my @unknown_escapes;
     ESCAPE:
     for my $escape (@real_escapes) {
@@ -193,25 +209,42 @@ sub _calculate_escape {
     return @unknown_escapes ? \@unknown_escapes : ();
 }
 
+# Executes all needed escape subs.
 sub _escape {
-    my ($string, $escape_ref) = @_;
+    my ($string, @escapes) = @_;
 
-    $escape_ref
+    @escapes
         or return $string;
-    for ( @{$escape_ref} ) {
+    for (@escapes) {
         $string = $escape_sub_of{$_}->($string);
     }
 
     return $string;
 }
 
+# class method
 sub escape {
-    my ($string, @escapes) = @_;
+    my (undef, $string, $escapes) = @_;
 
-    return _escape($string, \@escapes);
+    return _escape($string, split m{,}xms, $escapes);
 }
 
-sub _escape_and_set_quotes {
+# class method
+sub expand_unescaped {
+    my (undef, $string, $arg_ref) = @_;
+
+    my $regex = join q{|}, map { quotemeta $_ } keys %{$arg_ref};
+    $string =~ s{
+        \{ ($regex) \}
+    }{
+        defined $arg_ref->{$1} ? $arg_ref->{$1} : "{$1}"
+    }xmsge;
+
+    return $string;
+}
+
+# Prepare a string as Perl code.
+sub _string_to_perl_code {
     my $string = shift;
 
     defined $string
@@ -223,130 +256,102 @@ sub _escape_and_set_quotes {
     return "'$string'";
 }
 
-sub TEXT { ## no critic (ExcessComplexity)
-    my ($htc, $token, $arg_ref) = @_;
+# From here to subroutine TEXT: Caller is subroutine TEXT only.
 
-    my $attr_ref = $token->get_attributes();
-    my $filename = $htc->get_filename();
+sub _parse_attributes { ## no critic (ExcessComplexity)
+    my ($attr_ref, $filename, $data_ref) = @_;
+
     my $package = __PACKAGE__;
-
-    my %data = (
-        filename => {
-            value => $filename,
-        },
-    );
     ATTRIBUTE:
     for my $name ( keys %{$attr_ref} ) {
-        # ESCAPE
+        # parse ESCAPE
         if ($name eq 'ESCAPE') {
             if ( length $attr_ref->{$name} ) {
-                $data{escape}->{array}
+                $data_ref->{escape}->{array}
                     = [ split m{\|}xms, "0|$attr_ref->{$name}" ];
             }
         }
         if ( $init{allow_maketext} ) {
+            # parse maketext placeholders
+            # as string constant _1 .. _n
+            # as variable _1_VAR .. _n_VAR
             my $is_maketext
-                = my ($position, $is_variable, $is_escape)
-                = $name =~ m{
-                    \A _ (\d+) (?:
-                        (_VAR)
-                        | (_ESCAPE)
-                    )? \z}xms;
+                = my ($position, $is_variable)
+                = $name =~ m{\A _ (\d+) (_VAR)? \z}xms;
             if ($is_maketext) {
                 my $index = $position - 1;
-                my $data_of_index = $data{maketext}->{array}->[$index] ||= {};
-                # _n_ESCAPE
-                if ($is_escape) {
-                    if ( exists $data_of_index->{escape} ) {
-                        _throw( qq{Error in template $filename, plugin $package. Can not use maktext escape position $position twice. $name="$attr_ref->{$name}"} );
-                    }
-                    $data_of_index->{escape}->{array}
-                        = length $attr_ref->{$name}
-                        ? [ split m{\|}xms, "0|$attr_ref->{$name}" ]
-                        : ();
-                }
                 # _n, _n_VAR
-                else {
-                    if ( exists $data_of_index->{data} ) {
-                        _throw( qq{Error in template $filename, plugin $package. Can not use maktext position $position twice. $name="$attr_ref->{$name}"} );
-                    }
-                    $data_of_index->{data} = {
-                        is_variable => $is_variable,
-                        value       => $attr_ref->{$name},
-                    };
+                if ( exists $data_ref->{maketext}->{array}->[$index] ) {
+                    _throw( qq{Error in template $filename, plugin $package. Can not use maktext position $position twice. $name="$attr_ref->{$name}"} );
                 }
+                $data_ref->{maketext}->{array}->[$index] = {
+                    is_variable => $is_variable,
+                    value       => $attr_ref->{$name},
+                };
                 next ATTRIBUTE;
             }
         }
         if ( $init{allow_gettext} ) {
+            # parse gettext placeholders
+            # as string constant _name_1 .. _name_n
+            # as variable _name_1_VAR .. _name_n_VAR
             my $is_gettext
-                = my ($key, $is_variable, $is_escape)
-                = $name =~ m{
-                    \A _ ([A-Z][0-9A-Z_]*?) (?:
-                        (_VAR)
-                        | (_ESCAPE)
-                    )? \z}xms;
+                = my ($key, $is_variable)
+                = $name =~ m{\A _ ([A-Z][0-9A-Z_]*?) (_VAR)? \z}xms;
             if ($is_gettext) {
-                my $data_of_key = $data{gettext}->{hash}->{lc $key} ||= {};
-                # _name_ESCAPE
-                if ($is_escape) {
-                    if ( exists $data_of_key->{escape} ) {
-                        _throw( qq{Error in template $filename, plugin $package. Can not use gettext escape $key twice. $name="$attr_ref->{$name}"} );
-                    }
-                    $data_of_key->{escape}->{array}
-                        = length $attr_ref->{$name}
-                        ? [ split m{\|}xms, "0|$attr_ref->{$name}" ]
-                        : ();
-                }
                 # _name, _name_VAR
-                else {
-                    if ( exists $data_of_key->{data} ) {
-                        _throw( qq{Error in template $filename, plugin $package. Can not use gettext key $key twice. $name="$attr_ref->{$name}"} );
-                    }
-                    $data_of_key->{data} = {
-                        is_variable => $is_variable,
-                        value       => $attr_ref->{$name},
-                    };
+                if ( exists $data_ref->{gettext}->{hash}->{lc $key} ) {
+                    _throw( qq{Error in template $filename, plugin $package. Can not use gettext key $key twice. $name="$attr_ref->{$name}"} );
                 }
+                $data_ref->{gettext}->{hash}->{lc $key} = {
+                    is_variable => $is_variable,
+                    value       => $attr_ref->{$name},
+                };
                 next ATTRIBUTE;
             }
-            # PLURAL
+            # parse gettext plural
+            # as string constant PLURAL
+            # as variable PLURAL_VAR
             my $is_plural
                 = ($is_variable)
                 = $name =~ m{\A PLURAL (_VAR)? \z}xms;
             if ($is_plural) {
-                if ( exists $data{plural} ) {
+                if ( exists $data_ref->{plural} ) {
                     _throw( qq{Error in template $filename, plugin $package. Can not use PLURAL/PLURAL_VAR twice. $name="$attr_ref->{$name}"} );
                 }
-                $data{plural} = {
+                $data_ref->{plural} = {
                     is_variable => $is_variable,
                     value       => $attr_ref->{$name},
                 };
                 next ATTRIBUTE;
             }
-            # COUNT, COUNT_VAR
+            # parse gettext count
+            # as string constant COUNT
+            # as variable COUNT_VAR
             my $is_count
                 = ($is_variable)
                 = $name =~ m{\A COUNT (_VAR)? \z}xms;
             if ($is_count) {
-                if ( exists $data{count} ) {
+                if ( exists $data_ref->{count} ) {
                     _throw( qq{Error in template $filename, plugin $package. Can not use COUNT/COUNT_VAR twice. $name="$attr_ref->{$name}"} );
                 }
-                $data{count} = {
+                $data_ref->{count} = {
                     is_variable => $is_variable,
                     value       => $attr_ref->{$name},
                 };
                 next ATTRIBUTE;
             }
-            # CONTEXT
+            # parse gettext context
+            # as string constant CONTEXT
+            # as variable CONTEXT_VAR
             my $is_context
                 = ($is_variable)
                 = $name =~ m{\A CONTEXT (_VAR)? \z}xms;
             if ($is_context) {
-                if ( exists $data{context} ) {
+                if ( exists $data_ref->{context} ) {
                     _throw( qq{Error in template $filename, plugin $package. Can not use CONTEXT/CONTEXT_VAR twice. $name="$attr_ref->{$name}"} );
                 }
-                $data{context} = {
+                $data_ref->{context} = {
                     is_variable => $is_variable,
                     value       => $attr_ref->{$name},
                 };
@@ -354,12 +359,12 @@ sub TEXT { ## no critic (ExcessComplexity)
             }
         }
         if ( $init{allow_formatter} ) {
-            # FORMATTER
+            # parse FORMATTER
             if ( $name eq 'FORMATTER' ) {
-                if ( exists $data{formatter} ) {
+                if ( exists $data_ref->{formatter}->{array} ) {
                     _throw( qq{Error in template $filename, plugin $package. Can not use FORMATTER twice. $name="$attr_ref->{$name}"} );
                 }
-                $data{formatter}->{array} = [
+                $data_ref->{formatter}->{array} = [
                     map {
                         {value => $_};
                     } split m{\|}xms, $attr_ref->{$name}
@@ -367,82 +372,28 @@ sub TEXT { ## no critic (ExcessComplexity)
                 next ATTRIBUTE;
             }
         }
-    }
-
-    if ( $init{allow_maketext} && exists $data{maketext} ) {
-        my $data_maketext = $data{maketext}->{array};
-        INDEX:
-        for my $index ( 0 .. $#{$data_maketext} ) {
-            my $data_of_index = $data_maketext->[$index];
-            my $unknown_escapes = _calculate_escape({
-                escapes => [
-                    $htc->get_default_escape(),
-                    (
-                        exists $data{escape}
-                        ? @{ $data{escape}->{array} }
-                        : ()
-                    ),
-                    (
-                        exists $data_of_index->{escape}
-                        ? @{ $data_of_index->{escape}->{array} }
-                        : ()
-                    ),
-                ],
-                escape_ref => \$data_of_index->{escape},
-            });
-            if ($unknown_escapes) {
-                my $position  = $index + 1;
-                my $escapes   = join ', ', @{$unknown_escapes};
-                my $is_plural = @{$unknown_escapes} > 1;
-                _throw(
-                    "Error in template $filename, plugin $package. "
-                    . (
-                        $is_plural
-                        ? "Maketext escapes $escapes at _${position}_ESCAPE are unknown."
-                        : "Maketext escape $escapes at _${position}_ESCAPE is unknown."
-                    )
-                );
+        if ( $init{allow_unescaped} ) {
+            # parse unescaped placeholders
+            # as string constant UNESCAPED_name_1 .. UNESCAPED_name_n
+            # as variable UNESCAPED_name_1_VAR .. UNESCAPED_name_n_VAR
+            my $is_unescaped
+                = my ($key, $is_variable)
+                = $name =~ m{\A UNESCAPED _ ([A-Z][0-9A-Z_]*?) (_VAR)? \z}xms;
+            if ($is_unescaped) {
+                # _name, _name_VAR
+                if ( exists $data_ref->{unescaped}->{hash}->{lc $key} ) {
+                    _throw( qq{Error in template $filename, plugin $package. Can not use unescaped key $key twice. $name="$attr_ref->{$name}"} );
+                }
+                $data_ref->{unescaped}->{hash}->{lc $key} = {
+                    is_variable => $is_variable,
+                    value       => $attr_ref->{$name},
+                };
+                next ATTRIBUTE;
             }
         }
     }
-    if ( $init{allow_gettext} && exists $data{gettext} ) {
-        my $data_gettext = $data{gettext}->{hash};
-        KEY:
-        for my $key ( keys %{$data_gettext} ) {
-            my $data_of_key = $data_gettext->{$key};
-            my $unknown_escapes = _calculate_escape({
-                escapes => [
-                    $htc->get_default_escape(),
-                    (
-                        exists $data{escape}
-                        ? @{ $data{escape}->{array} }
-                        : ()
-                    ),
-                    (
-                        exists $data_of_key->{escape}
-                        ? @{ $data_of_key->{escape}->{array} }
-                        : ()
-                    ),
-                ],
-                escape_ref => \$data_of_key->{escape},
-            });
-            if ($unknown_escapes) {
-                my $escapes   = join ', ', @{$unknown_escapes};
-                my $is_plural = @{$unknown_escapes} > 1;
-                _throw(
-                    "Error in template $filename, plugin $package. "
-                    . (
-                        $is_plural
-                        ? "Gettext escapes $escapes at _${key}_ESCAPE are unknown."
-                        : "Gettext escape $escapes at _${key}_ESCAPE is unknown."
-                    )
-                );
-            }
-        }
-    }
-
-    # NAME/VALUE
-    $data{text} = {
+    # parse NAME/VALUE
+    $data_ref->{text} = {
         exists $attr_ref->{NAME}
         ? (
             exists $attr_ref->{VALUE}
@@ -459,17 +410,23 @@ sub TEXT { ## no critic (ExcessComplexity)
         )
     };
 
-    # ESCAPE
+    return;
+}
+
+sub _check_escape {
+    my ($data_ref, $htc, $filename) = @_;
+
+    my $package = __PACKAGE__;
     my $unknown_escapes = _calculate_escape({
         escapes => [
             $htc->get_default_escape(),
             (
-                exists $data{escape}
-                ? @{ $data{escape}->{array} }
+                exists $data_ref->{escape}
+                ? @{ $data_ref->{escape}->{array} }
                 : ()
             ),
         ],
-        escape_ref => \$data{escape}->{array},
+        escape_ref => \$data_ref->{escape}->{array},
     });
     if ($unknown_escapes) {
         my $escapes   = join ', ', @{$unknown_escapes};
@@ -483,117 +440,104 @@ sub TEXT { ## no critic (ExcessComplexity)
             )
         );
     }
-    if ( exists $data{escape} && ! @{ $data{escape}->{array} } ) {
-        delete $data{escape};
+    if ( exists $data_ref->{escape} && ! @{ $data_ref->{escape}->{array} } ) {
+        delete $data_ref->{escape};
     }
 
-    # write code snippets
-    my $escape_sub = sub {
-        my ($data, $escape_ref) = @_;
+    return;
+}
 
-        if ( $data->{is_variable} ) {
-            return
-                $escape_ref
-                ? (
-                    qq{$package\::escape(}
-                    . _lookup_variable($htc, $data->{value})
-                    . q{,}
-                    . (
-                        join q{,}, map {
-                            _escape_and_set_quotes($_);
-                        } @{$escape_ref}
-                    )
-                    . q{)}
-                )
-                : _lookup_variable($htc, $data->{value});
-        }
+sub _prepare_htc_code {
+    my ($data_ref, $htc) = @_;
+
+    my $package = __PACKAGE__;
+
+    # write code snippet
+    my $to_perl_code = sub {
+        my $data = shift;
+
+        $data->{is_variable}
+            and return _lookup_variable($htc, $data->{value});
         defined $data->{value}
             or return 'undef';
 
-        return
-            _escape_and_set_quotes(
-                $escape_ref
-                ? _escape(
-                    $data->{value},
-                    $escape_ref,
-                )
-                : $data->{value},
-            );
+        return _string_to_perl_code( $data->{value} );
     };
-    # run for real escapes
-    ESCAPE:
+
+    PREPARE_SCALAR:
     for my $key ( qw(filename text plural count context) ) {
-        exists $data{$key}
-            or next ESCAPE;
-        my $data = $data{$key};
-        $data->{escaped} = $escape_sub->(
-            $data,
-            exists $data{escape}
-            ? $data{escape}->{array}
-            : (),
-        );
+        exists $data_ref->{$key}
+            or next PREPARE_SCALAR;
+        my $data = $data_ref->{$key};
+        $data->{perl_code} = $to_perl_code->($data);
     }
-    ESCAPE:
-    for my $key ( qw(maketext) ) {
-        exists $data{$key}
-            or next ESCAPE;
-        my $data = $data{$key};
-        $data->{escaped}
+
+    PREPARE_ARRAY:
+    for my $key ( qw(maketext formatter) ) {
+        exists $data_ref->{$key}
+            or next PREPARE_ARRAY;
+        my $data = $data_ref->{$key};
+        $data->{perl_code}
             = q{[}
             . (
                 join q{,}, map {
-                    $escape_sub->(
-                        $_->{data},
-                        exists $_->{escape}
-                        ? $_->{escape}
-                        : (),
-                    );
+                    $to_perl_code->($_);
                 } @{ $data->{array} }
             )
             . q{]};
     }
-    ESCAPE:
-    for my $key ( qw(gettext) ) {
-        exists $data{$key}
-            or next ESCAPE;
-        my $data = $data{$key};
-        $data->{escaped}
+
+    PREPARE_HASH:
+    for my $key ( qw(gettext unescaped) ) {
+        exists $data_ref->{$key}
+            or next PREPARE_HASH;
+        my $data = $data_ref->{$key};
+        $data->{perl_code}
             = q[{]
             . (
                 join q{,}, map {
-                    _escape_and_set_quotes($_)
+                    _string_to_perl_code($_)
                     . ' => '
-                    . $escape_sub->(
-                        $data->{hash}->{$_}->{data},
-                        exists $data->{hash}->{$_}->{escape}
-                        ? $data->{hash}->{$_}->{escape}
-                        : (),
-                    )
+                    . $to_perl_code->( $data->{hash}->{$_} )
                 } keys %{ $data->{hash} }
             )
             . q[}];
     }
-    ESCAPE:
-    for my $key ( qw(formatter) ) {
-        exists $data{$key}
-            or next ESCAPE;
-        my $data = $data{$key};
-        $data->{escaped}
-            = q{[}
-            . (
-                join q{,}, map {
-                    $escape_sub->($_);
-                } @{ $data->{array} }
-            )
-            . q{]};
+
+    # store escape itself
+    PREPARE_JOINED_ARRAY:
+    for my $key ( qw(escape) ) {
+        exists $data_ref->{$key}
+            or next PREPARE_JOINED_ARRAY;
+        my $data = $data_ref->{$key};
+        $data->{perl_code}
+            = _string_to_perl_code(
+                join q{,}, @{ $data->{array} }
+        );
     }
 
-    delete $data{escape};
+    return;
+}
+
+sub TEXT {
+    my ($htc, $token, $arg_ref) = @_;
+
+    my $attr_ref = $token->get_attributes();
+    my $filename = $htc->get_filename();
+
+    my %data = (
+        filename => {
+            value => $filename,
+        },
+    );
+    _parse_attributes($attr_ref, $filename, \%data);
+    _check_escape(\%data, $htc, $filename);
+    _prepare_htc_code(\%data, $htc);
 
     # necessary for HTC's caching mechanism
     my $inner_hash = join ', ', map {
         ( $_ eq 'filename' || exists $data{$_} )
-        ? "$_ => $data{$_}->{escaped}"
+        ? "$_ => $data{$_}->{perl_code}"
         : ();
     } keys %data;
 
@@ -612,27 +556,44 @@ __END__
 
 HTML::Template::Compiled::Plugin::I18N - Internationalization for HTC
 
-$Id: I18N.pm 133 2009-11-09 08:19:19Z steffenw $
+$Id: I18N.pm 150 2009-11-18 20:33:13Z steffenw $
 
 $HeadURL: https://htc-plugin-i18n.svn.sourceforge.net/svnroot/htc-plugin-i18n/trunk/lib/HTML/Template/Compiled/Plugin/I18N.pm $
 
 =head1 VERSION
 
-0.03
+1.00
 
 =head1 SYNOPSIS
 
-=head2 create a translator class
+=head2 Create a Translator class
 
     package MyProjectTranslator;
+
+    use HTML::Template::Compiled::Plugin::I18N;
 
     sub translate {
         my ($class, $arg_ref) = @_;
 
-        return $arg_ref->{text};
+        # Translate the text (maketext) or text + plural (gettext).
+        my $translation
+            = your_translator( $arg_ref->{text}, ... );
+        # Escape the translated string now.
+        if ( exists $arg_ref->{escape} ) {
+            $translation = HTML::Template::Compiled::Plugin::I18N->escape(
+                $translation,
+                $params->{escape},
+            );
+        }
+        if ( exists $arg_ref->{unescaped} ) {
+            $translation = HTML::Template::Compiled::Plugin::I18N->expand_unescaped(
+                $translation,
+                $arg_ref->{unescaped},
+            );
+        }
     }
 
-=head2 initialize plugin and then the template
+=head2 Initialize plugin and then the template
 
     use HTML::Template::Compiled;
     use HTML::Template::Compiled::Plugin::I18N;
@@ -667,58 +628,75 @@ to join the plugin to your selected translation module.
 
 =head1 TEMPLATE SYNTAX
 
-=head2 text only
+=head2 Escape
+
+An escape can be a "0" to ignore all inherited escapes.
+It can be a single word like "HTML"
+or a list concatinated by "|" like "HTML|BR".
 
 =over
 
-=item * static text values
+=item * Without escape
 
-    <%TEXT VALUE="some static text"%>
-    <%TEXT VALUE="some static text" ESCAPE=HTML%>
+    <%TEXT ... %>         (if no default escape is set)
+    <%TEXT ... ESCAPE=0%>
 
 The 2nd parameter of the method translate (translator class) will set to:
 
     {
-        text => 'some staic text',
+        ...
     }
 
-=item * text from a variable
+=item * Escape HTML as example
+
+    <%TEXT ... %>            (default escape is set)
+    <%TEXT ... ESCAPE=HTML%>
+
+The 2nd parameter of the method translate (translator class) will set to:
+
+    {
+        escape => 'HTML',
+        ...
+    }
+
+=item * More than one escape
+
+    <%TEXT ... ESCAPE=HTML|BR%>
+
+The 2nd parameter of the method translate (translator class) will set to:
+
+    {
+        escape => 'HTML|BR',
+        ...
+    }
+
+=back
+
+=head2 VALUE or NAME
+
+=over
+
+=item * Static text values
+
+    <%TEXT VALUE="some static text"%>
+
+The 2nd parameter of the method translate (translator class) will set to:
+
+    {
+        text   => 'some staic text',
+        ...
+    }
+
+=item * Text from a variable
 
     <%TEXT a.var%>
-    <%TEXT a.var ESCAPE=HTML%>
+    <%TEXT NAME="a.var"%>
 
 The 2nd parameter of the method translate (translator class) will set to:
 
     {
         text => $a->var(), # or $a->{var}
-    }
-
-=back
-
-=head2 formatter
-
-=over
-
-=item * 1 formatter
-
-   <%TEXT VALUE="some **marked** text" FORMATTER="markdown"%>
-
-The 2nd parameter of the method translate (translator class) will set to:
-
-    {
-        text      => 'some **marked** text',
-        formatter => [qw( markdown )],
-    }
-
-=item * more formatters
-
-   <%TEXT VALUE="some **marked** text" FORMATTER="markdown|second"%>
-
-The 2nd parameter of the method translate (translator class) will set to:
-
-    {
-        text      => 'some **marked** text',
-        formatter => [qw( markdown second)],
+        ...
     }
 
 =back
@@ -734,37 +712,29 @@ Allow maketext during initialization.
 
 =over
 
-=item * with a static value
+=item * With a static value
 
     <%TEXT VALUE="Hello [_1]!" _1="world"%>
-    <%TEXT VALUE="Hello [_1]!" _1="world" _1_ESCAPE=0%>
-    <%TEXT VALUE="Hello [_1]!" _1="world" ESCAPE=HTML%>
-    <%TEXT VALUE="Hello [_1]!" _1="world" _1_ESCAPE=0 ESCAPE=HTML%>
 
 The 2nd parameter of the method translate (translator class) will set to:
 
     {
         text     => 'Hello [_1]!',
         maketext => [ qw( world ) ],
-        # escapes processed already
     }
 
-=item * with a variable
+=item * With a variable
 
     <%TEXT VALUE="Hello [_1]!" _1_VAR="var.with.the.value"%>
-    <%TEXT VALUE="Hello [_1]!" _1_VAR="var.with.the.value" _1_ESCAPE=0%>
-    <%TEXT VALUE="Hello [_1]!" _1_VAR="var.with.the.value" ESCAPE=HTML%>
-    <%TEXT VALUE="Hello [_1]!" _1_VAR="var.with.the.value" _1_ESCAPE=0 ESCAPE=HTML%>
 
 The 2nd parameter of the method translate (translator class) will set to:
 
     {
         text     => 'Hello [_1]!',
         maketext => [ $var->with()->the()->value() ], # or $var->{with}->{the}->{value}
-        # escapes processed already
     }
 
-=item * mixed samples
+=item * Mixed samples
 
     <%TEXT VALUE="The [_1] is [_2]." _1="window" _2="blue" %>
     <%TEXT a.text                    _1="window" _2_VAR="var.color" %>
@@ -782,96 +752,122 @@ Allow gettext during initialization.
 
 =over
 
-=item * with a static value
+=item * With a static value
 
     <%TEXT VALUE="Hello {name}!" _name="world"%>
-    <%TEXT VALUE="Hello {name}!" _name="world" _name_ESCAPE=0%>
-    <%TEXT VALUE="Hello {name}!" _name="world" ESCAPE=HTML%>
-    <%TEXT VALUE="Hello {name}!" _name="world" _name_ESCAPE=0 ESCAPE=HTML%>
 
 The 2nd parameter of the method translate (translator class) will set to:
 
     {
         text    => 'Hello {name}!',
         gettext => { name => 'world' },
-        # escapes processed already
     }
 
-=item * with a variable
+=item * With a variable
 
     <%TEXT VALUE="Hello {name}!" _name_VAR="var.with.the.value"%>
-    <%TEXT VALUE="Hello {name}!" _name_VAR="var.with.the.value" _name_ESCAPE=0%>
-    <%TEXT VALUE="Hello {name}!" _name_VAR="var.with.the.value" ESCAPE=HTML%>
-    <%TEXT VALUE="Hello {name}!" _name_VAR="var.with.the.value" _name_ESCAPE=0 ESCAPE=HTML%>
 
 The 2nd parameter of the method translate (translator class) will set to:
 
     {
         text    => 'Hello {name}!',
         gettext => { name => $var->with()->the()->value() },
-        # escapes processed already
     }
 
-=item * plural forms with PLURAL, PLURAL_VAR, COUNT COUNT_VAR
+=item * Plural forms with PLURAL, PLURAL_VAR, COUNT COUNT_VAR
 
     <%TEXT VALUE="book" PLURAL="books" COUNT="1"%>
     <%TEXT VALUE="book" PLURAL="books" COUNT_VAR="var.num"%>
-    <%TEXT VALUE="{num} book" PLURAL="{num} books" COUNT="2" _num="2"
+    <%TEXT VALUE="{num} book" PLURAL="{num} books" COUNT="2" _num="2"%>
+
+For the last one,
+the 2nd parameter of the method translate (translator class) will set to:
+
+    {
+        text    => '{num} book',
+        plural  => '{num} books',
+        count   => 2,
+        gettext => { num => 2 },
+    }
 
 =back
 
-=head2 escaping rules
+=head2 Formatter
 
-An escape can be a "0" to ignore all inherited escapes.
-It can be a single word like "HTML"
-or a list concatinated by "|" like "HTML|BR".
+Allow formatter during initialization.
+
+    HTML::Template::Compiled::Plugin::I18N->init(
+        allow_formatter => $true_value,
+        ...
+    );
 
 =over
 
-=item * no extra escape set
+=item * One formatter
 
-The default escape will be used for the value and the placeholders.
+   <%TEXT VALUE="some **marked** text" FORMATTER="markdown"%>
 
-    <%TEXT VALUE="..."%>
-    <%TEXT VALUE="..." _1="..."%>
-    <%TEXT VALUE="..." _name="..."%>
+The 2nd parameter of the method translate (translator class) will set to:
 
-=item * escape set
+    {
+        text      => 'some **marked** text',
+        formatter => [qw( markdown )],
+    }
 
-A given escape ignores the default escape for the value and the placeholders.
+=item * More formatters
 
-    <%TEXT VALUE="..." ESCAPE="..."%>
-    <%TEXT VALUE="..." _1="..."    ESCAPE="..."%>
-    <%TEXT VALUE="..." _name="..." ESCAPE="..."%>
+   <%TEXT VALUE="some **marked** text" FORMATTER="markdown|second"%>
 
-=item * placeholder escape set
+The 2nd parameter of the method translate (translator class) will set to:
 
-A given placeholder escape ignores the default escape and the escape.
-At example the default escape is 'DDD'.
+    {
+        text      => 'some **marked** text',
+        formatter => [qw( markdown second)],
+    }
 
-    <%TEXT VALUE="..." _1="..." _1_ESCAPE="PPP" _2="..."%>
-                  ^^^      ^^^                      ^^^
-    escape DDD ____|        |                        |
-    escape PPP _____________|                        |
-    escape DDD ______________________________________|
+=back
 
-    <%TEXT VALUE="..." _name1="..." _name1_ESCAPE="PPP" _name2="..."%>
-                  ^^^          ^^^                              ^^^
-    escape DDD ____|            |                                |
-    escape PPP _________________|                                |
-    escape DDD __________________________________________________|
+=head2 Unescaped placeholders
 
-    <%TEXT VALUE="..." _1="..." _1_ESCAPE="PPP" _2="..." ESCAPE="EEE"%>
-                  ^^^      ^^^                      ^^^
-    escape EEE ____|        |                        |
-    escape PPP _____________|                        |
-    escape EEE ______________________________________|
+Unescaped placeholders are written in the text like gettext placeholders.
+They are usable allone or in combination with maketext or gettext placeholders.
 
-    <%TEXT VALUE="..." _name1="..." _name1_ESCAPE="PPP" _name2="..." ESCAPE="EEE"%>
-                  ^^^          ^^^                              ^^^
-    escape EEE ____|            |                                |
-    escape PPP _________________|                                |
-    escape EEE __________________________________________________|
+Allow unescaped placeholders during initialization.
+
+    HTML::Template::Compiled::Plugin::I18N->init(
+        allow_unescaped => $true_value,
+        ...
+    );
+
+=over
+
+=item * With a static value
+
+    <%TEXT VALUE="Hello" UNESCAPED_link_begin='<a href="...">' UNESCAPED_link_end='</a>'%>
+
+The 2nd parameter of the method translate (translator class) will set to:
+
+    {
+        text      => 'Hello',
+        unescaped => {
+            link_begin => '<a href="...">',
+            link_end   => '</a>',
+        },
+    }
+
+=item * With a variable
+
+    <%TEXT VALUE="Hello" UNESCAPED_link_begin_VAR="var1" UNESCAPED_link_end_VAR="var2"%>
+
+The 2nd parameter of the method translate (translator class) will set to:
+
+    {
+        text    => 'Hello {name}!',
+        gettext => {
+            var1 => $var1,
+            var2 => $var2,
+        },
+    }
 
 =back
 
@@ -882,13 +878,7 @@ Run this *.pl files.
 
 =head1 SUBROUTINES/METHODS
 
-=cut head2 internal sub _require_via_string
-
-Internal sub to use classes late.
-
-    my $class = _require_via_string($class);
-
-=head2 class method init
+=head2 Class method init
 
 Call init before the HTML::Template::Compiled->new(...) will called.
 
@@ -900,6 +890,7 @@ Call init before the HTML::Template::Compiled->new(...) will called.
         allow_maketext   => $boolean,
         allow_gettext    => $boolean,
         allow_formatter  => $boolean,
+        allow_unescaped  => $boolean,
         translator_class => 'TranslatorClassName',
         escape_plugins   => [ qw(
             the same like
@@ -908,61 +899,37 @@ Call init before the HTML::Template::Compiled->new(...) will called.
         )],
     );
 
-=cut head2 internal sub _throw
-
-Internally used to throw exceptions.
-
-    _throw(@message);
-
-=head2 class method register
+=head2 Class method register
 
 HTML::Template::Compiled will call this method to register this plugin.
 
     HTML::Template::Compiled::Plugin::I18N->register();
 
-=cut
+=head2 Class method escape
 
- =head2 internal sub _lookup_variable
-
-Internally used to get the real value.
-
-    _lookup_variable($htc, $var_name);
-
- =head2 internal sub _calculate_escape
-
-Calculate the real escape using the default escape,
-the escape for the tag and
-the escape for the placeholder.
-
-    $unknown_escapes = _calculate_escape({
-        escapes    => [qw( given_escapes )],
-        escape_ref => \$how_to_write_bak_the_real_escape_array_ref,
-    });
-
-$unknown_escapes is undef or an array_ref.
-
- =head2 internal sub _escape
-
-Internally used to run the escapeing.
-
-    $escaped_string = _escape($string, $escape_array_ref);
-
-=head2 sub escape
-
-Called from compiled code only.
-
-    $escaped_string = HTML::Template::Compiled::Plugin::I18N::escape(
-        $string,
-        @escapes,
+    $escaped_string = HTML::Template::Compiled::Plugin::I18N->escape(
+        $translated_string,
+        $escapes_joined_by_comma,
     );
 
-=cut head2 _escape_and_set_quotes
+=head2 Class method expand_unescaped
 
-Internally used to build values as code snippets.
+    $finished_string = HTML::Template::Compiled::Plugin::I18N->expand_unescaped(
+        $translated_and_escaped_string,
+        $hash_ref_with_placeholders,
+    );
 
-    $quoted_string = _escape_and_set_quotes($string);
+=head2 Subroutine TEXT and swapt out code
 
-=head2 sub TEXT
+=over
+
+=item * Subroutine _parse_attributes
+
+=item * Subroutine _check_escape {
+
+=item * Subroutine _prepare_htc_code {
+
+=item * Subroutine TEXT
 
 Do not call this method.
 It is used to create the HTC Template Code.
@@ -978,79 +945,59 @@ The translate method will called like
         ...
     });
 
+=back
+
 =head1 DIAGNOSTICS
 
 =over
 
-=item * missing escape plugin or translator class
+=item * Missing escape plugin or translator class
 
 Can not find package ...
 
 =back
 
-=head2 text
+=head2 Text
 
 =over
 
-=item * select NAME or VALUE
+=item * Select NAME or VALUE
 
 Error in template filename, plugin package.
 Do not use NAME and VALUE at the same time.
 NAME="..."
 VALUE="..."
 
-=item * escape plugin is not configured at method init
+=item * Escape plugin is not configured at method init
 
 Error in template filename, plugin package.
 Escape ... at ESCAPE is unknown.
 
 =back
 
-=head2 maketext
+=head2 Maketext
 
 =over
 
-=item * double maketext placeholder
+=item * Double maketext placeholder
 
 Error in template filename, plugin package.
 Can not use maktext position n twice.
 _n="..."
 
-=item * double maketext placeholder escape
-
-Error in template filename, plugin package.
-Can not use maktext escape position n twice.
-_n_ESCAPE="..."
-
-=item * escape plugin is not configured at method init
-
-Error in template filename, plugin package.
-Maketext escape ... at _n_ESCAPE is unknown.
-
 =back
 
-=head2 gettext
+=head2 Gettext
 
 =over
 
-=item * double gettext palaceholder
+=item * Ddouble gettext palaceholder
 
 Error in template filename, plugin package.
 Can not use gettext key name twice.
 _name="..."
 
-=item * double gettext placeholder escape
-
-Error in template filename, plugin package.
-Can not use gettext escape name twice.
-_name_ESCAPE="..."
-
-=item * escape plugin is not configured at method init
-
-Error in template filename, plugin package.
-Gettext escape ... at _name_ESCAPE is unknown.
-
-=item * double gettext plural
+=item * Double gettext plural
 
 Error in template filename, plugin package.
 Can not use PLURAL/PLURAL_VAR twice.
@@ -1062,7 +1009,7 @@ Error in template filename, plugin package.
 Can not use PLURAL/PLURAL_VAR twice.
 PLURAL_VAR="..."
 
-=item * double gettext count
+=item * Double gettext count
 
 Error in template filename, plugin package.
 Can not use COUNT/COUNT_VAR twice.
@@ -1074,7 +1021,7 @@ Error in template filename, plugin package.
 Can not use COUNT/COUNT_VAR twice.
 COUNT_VAR="..."
 
-=item * double gettext context
+=item * Double gettext context
 
 Error in template filename, plugin package.
 Can not use CONTEXT/CONTEXT_VAR twice.
@@ -1086,7 +1033,7 @@ Error in template filename, plugin package.
 Can not use CONTEXT/CONTEXT_VAR twice.
 CONTEXT_VAR="..."
 
-=item * double formatter
+=item * Double formatter
 
 Error in template filename, plugin package.
 Can not use FORMATTER twice.
