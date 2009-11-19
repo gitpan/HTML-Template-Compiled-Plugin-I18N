@@ -1,5 +1,9 @@
 Revision history for Perl extension HTML::Template::Compiled::Plugin::I18N.
 
+1.01  Thu Nov 19 22:00:00 2009
+- Delete debug code.
+  Add a new test with a more realistic test translator. 
+
 1.00  Wed Nov 18 22:00:00 2009
 - API changed.
   Placeholder escapes are a very bad idea.

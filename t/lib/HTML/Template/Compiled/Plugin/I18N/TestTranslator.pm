@@ -9,6 +9,11 @@ use HTML::Template::Compiled::Plugin::I18N;
 use parent qw(Class::Singleton);
 
 my %lexicon = (
+    en => {
+        'Hello <world>!' => 'Hello <world>!',
+        ( ( '{link_begin}<link>{link_end}'     ) x 2 ),
+        ( ( '{link_begin}<**link**>{link_end}' ) x 2 ),
+    },
     de => {
         'Hello <world>!' => 'Hallo <Welt>!',
     },
@@ -42,28 +47,36 @@ sub translate {
 
     my $self = $class->new();
 
-    SEARCH: {
-        my $language = $self->get_language();
-        exists $lexicon{$language}
-            or last SEARCH;
-        my $lexicon_of_language = $lexicon{$language};
-        $arg_ref->{text}
-            or last SEARCH;
-        exists $lexicon_of_language->{ $arg_ref->{text} }
-            or last SEARCH;
-        my $translation = $lexicon_of_language->{ $arg_ref->{text} }
-            or return 'undef';
-        if ( exists $arg_ref->{escape} ) {
-            $translation = HTML::Template::Compiled::Plugin::I18N->escape(
-                $translation,
-                $arg_ref->{escape},
-            );
+    my $language = $self->get_language();
+    exists $lexicon{$language}
+        or return "Language $language is not in the lexicon";
+    my $lexicon_of_language = $lexicon{$language};
+    $arg_ref->{text}
+        or return 'No text';
+    exists $lexicon_of_language->{ $arg_ref->{text} }
+        or return "No lexicon entry for: $arg_ref->{text}";
+    my $translation = $lexicon_of_language->{ $arg_ref->{text} }
+        or return "Translation result not found for: $arg_ref->{text}";
+    if ( exists $arg_ref->{escape} ) {
+        $translation = HTML::Template::Compiled::Plugin::I18N->escape(
+            $translation,
+            $arg_ref->{escape},
+        );
+    }
+    if ( exists $arg_ref->{formatter} ) {
+        my $formatter = $arg_ref->{formatter};
+        if (lc $formatter->[0] eq lc 'Markdown') {
+            $translation =~ s{\*\* ([^*]+) \*\*}{<strong>$1</strong>}xmsg;
         }
-
-        return $translation;
+    }
+    if ( exists $arg_ref->{unescaped} ) {
+        $translation = HTML::Template::Compiled::Plugin::I18N->expand_unescaped(
+            $translation,
+            $arg_ref->{unescaped},
+        );
     }
 
-    return $arg_ref->{text};
+    return $translation;
 }
 
 1;

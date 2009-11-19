@@ -42,7 +42,6 @@ my @data = (
     {
         test     => 'escape text',
         prepare  => sub {
-            $TEST::TEST = 1;
             HTML::Template::Compiled::Plugin::I18N::TestTranslator
                 ->new()
                 ->set_language('de');
@@ -53,7 +52,6 @@ my @data = (
     {
         test     => 'escape var',
         prepare  => sub {
-            $TEST::TEST = 1;
             HTML::Template::Compiled::Plugin::I18N::TestTranslator
                 ->new()
                 ->set_language('de');

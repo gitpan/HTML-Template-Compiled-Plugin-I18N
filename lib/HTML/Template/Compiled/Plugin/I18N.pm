@@ -3,7 +3,7 @@ package HTML::Template::Compiled::Plugin::I18N;
 use strict;
 use warnings;
 
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 use Carp qw(croak);
 use English qw(-no_match_vars $EVAL_ERROR);
@@ -556,13 +556,13 @@ __END__
 
 HTML::Template::Compiled::Plugin::I18N - Internationalization for HTC
 
-$Id: I18N.pm 150 2009-11-18 20:33:13Z steffenw $
+$Id: I18N.pm 156 2009-11-19 20:45:55Z steffenw $
 
 $HeadURL: https://htc-plugin-i18n.svn.sourceforge.net/svnroot/htc-plugin-i18n/trunk/lib/HTML/Template/Compiled/Plugin/I18N.pm $
 
 =head1 VERSION
 
-1.00
+1.01
 
 =head1 SYNOPSIS
 
