@@ -6,7 +6,7 @@ use warnings;
 use Carp qw(croak);
 use HTML::Template::Compiled::Plugin::I18N;
 
-our $VERSION = '1.00';
+our $VERSION = '1.02';
 
 my $escape_ref = sub {
     my $string = shift;
@@ -34,24 +34,21 @@ sub get_escape {
 sub translate {
     my (undef, $attr_ref) = @_;
 
-    my $escape
-        = exists $attr_ref->{escape}
-        ? delete $attr_ref->{escape}
-        : ();
-    if ( defined $escape ) {
-        ESCAPE:
+    if ( exists $attr_ref->{escape} ) {
+        my $escape = delete $attr_ref->{escape};
+        ESCAPE_SCALAR:
         for ( qw(text plural) ) {
             exists $attr_ref->{$_}
-                or next ESCAPE;
+                or next ESCAPE_SCALAR;
             $attr_ref->{$_} = HTML::Template::Compiled::Plugin::I18N->escape(
                 $attr_ref->{$_},
                 $escape,
             );
         }
-        ESCAPE:
+        ESCAPE_ARRAYREF:
         for ( qw(maketext) ) {
             exists $attr_ref->{$_}
-                or next ESCAPE;
+                or next ESCAPE_ARRAYREF;
             for my $value ( @{ $attr_ref->{$_} } ) {
                 $value = HTML::Template::Compiled::Plugin::I18N->escape(
                     $value,
@@ -59,10 +56,10 @@ sub translate {
                 );
             }
         }
-        ESCAPE:
+        ESCAPE_HASHREF:
         for ( qw(gettext) ) {
             exists $attr_ref->{$_}
-                or next ESCAPE;
+                or next ESCAPE_HASHREF;
             for my $value ( values %{ $attr_ref->{$_} } ) {
                 $value = HTML::Template::Compiled::Plugin::I18N->escape(
                     $value,
@@ -77,7 +74,7 @@ sub translate {
         ? (
             "$_="
             . join q{,}, map {
-                get_escape()->($_);
+                __PACKAGE__->get_escape()->($_);
             } (
                 ref $attr_ref->{$_} eq 'ARRAY'
                 ? @{ $attr_ref->{$_} }
@@ -108,30 +105,41 @@ __END__
 HTML::Template::Compiled::Plugin::I18N::DefaultTranslator
 - an extremly simple translater class for the HTC plugin I18N
 
-$Id: DefaultTranslator.pm 150 2009-11-18 20:33:13Z steffenw $
+$Id: DefaultTranslator.pm 161 2009-12-03 09:05:54Z steffenw $
 
 $HeadURL: https://htc-plugin-i18n.svn.sourceforge.net/svnroot/htc-plugin-i18n/trunk/lib/HTML/Template/Compiled/Plugin/I18N/DefaultTranslator.pm $
 
 =head1 VERSION
 
-1.00
+1.02
 
 =head1 SYNOPSIS
 
 =head1 DESCRIPTION
 
 This module is very useful to run the application
-before the translator module has finished.
+before the real translator module has been finished.
 
-The output string is human readable
-except the escape callback sub.
+The I18N plugin calls the class method translate of the translator class.
+The given parameter is a hash reference of scalars, array or hash references.
+The translator has to run the given escape code reference for all values.
+To see the struct of the rest of this hash reference
+the default translator simplifies to
+
+ scalar=value;array=value1,value2;hash=key1,value1
+
+Then the output is human readable.
+
+There is only a simple problem with undefs.
+Therefore the default translator has an extra escape.
 
 =head1 SUBROUTINES/METHODS
 
 =head2 class method set_escape
 
-Set a escape code reference to escape all the values.
-The example describes the default to have no undefined values.
+Set an escape code reference to run an extra escape for all the values.
+The example describes the default to have no undefined values
+in the maketext array reference or in the gettext hash.
 
     HTML::Template::Compiled::Plugin::I18N::DefaultTranslator->set_escape(
         sub {
@@ -146,7 +154,7 @@ The example describes the default to have no undefined values.
 
 =head2 class method get_escape
 
-Get back the current escape code reference.
+Get back the current escape code reference for extra escape.
 
    $code_ref
        = HTML::Template::Compiled::Plugin::I18N::DefaultTranslator->get_escape();
@@ -154,14 +162,26 @@ Get back the current escape code reference.
 =head2 class method translate
 
 Possible hash keys are
-context, text, plural, maketext, count, gettext, formatter and escape_code.
-The last one is to escape text and plural after translation.
+
+    context   (optional string)
+    text      (string)
+    plural    (optional string)
+    count     (optional unsigned integer)
+    maketext  (optional array reference)
+    gettext   (optional hash reference)
+    formatter (optional array reference)
+    escape    (optional code reference)
+
+The scalar values are defined or the hash key does not exists.
+The array and hash references are references or the hash key does not exists.
 
     $string
         = HTML::Template::Compiled::Plugin::I18N::DefaultTranslator->translate({
             text => 'text',
             ...
         });
+
+After a translation text and plural have to escape.
 
 =head1 DIAGNOSTICS
 
@@ -178,7 +198,7 @@ Carp
 =head1 INCOMPATIBILITIES
 
 The output is not readable by a parser
-but very good during the application development.
+but very good human readable during the application development.
 
 =head1 BUGS AND LIMITATIONS
 

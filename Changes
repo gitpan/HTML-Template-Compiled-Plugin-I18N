@@ -1,8 +1,11 @@
 Revision history for Perl extension HTML::Template::Compiled::Plugin::I18N.
 
+1.02  Thu Dec  3 10:15:00 2009
+- Better POD and examples.
+
 1.01  Thu Nov 19 22:00:00 2009
 - Delete debug code.
-  Add a new test with a more realistic test translator. 
+  Add a new test with a more realistic test translator.
 
 1.00  Wed Nov 18 22:00:00 2009
 - API changed.
@@ -11,11 +14,11 @@ Revision history for Perl extension HTML::Template::Compiled::Plugin::I18N.
   During the translation placeholders (maketext/gettext) are expanded.
   The second step is the escaping of the translated string.
   Then the formatter should run.
-  At least expand the unescaped placeholders. 
+  At least expand the unescaped placeholders.
 
 0.03  Mon Nov  9 10:00:00 2009
-- no case sensitive escapes 
-  (accept all notations, process as upper case) 
+- no case sensitive escapes
+  (accept all notations, process as upper case)
 
 0.02  Tue Aug 04 22:30:00 2009
 - skip at missing module during escape testig

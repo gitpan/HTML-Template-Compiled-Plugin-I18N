@@ -52,7 +52,7 @@ Example::Translator->set_language('en_GB');
 Example::Translator->set_language('de_DE');
 () = print $htc->output();
 
-# $Id$
+# $Id: example.pl 163 2009-12-03 09:20:38Z steffenw $
 
 __END__
 

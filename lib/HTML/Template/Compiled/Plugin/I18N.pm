@@ -3,7 +3,7 @@ package HTML::Template::Compiled::Plugin::I18N;
 use strict;
 use warnings;
 
-our $VERSION = '1.01';
+our $VERSION = '1.02';
 
 use Carp qw(croak);
 use English qw(-no_match_vars $EVAL_ERROR);
@@ -556,53 +556,27 @@ __END__
 
 HTML::Template::Compiled::Plugin::I18N - Internationalization for HTC
 
-$Id: I18N.pm 156 2009-11-19 20:45:55Z steffenw $
+$Id: I18N.pm 161 2009-12-03 09:05:54Z steffenw $
 
 $HeadURL: https://htc-plugin-i18n.svn.sourceforge.net/svnroot/htc-plugin-i18n/trunk/lib/HTML/Template/Compiled/Plugin/I18N.pm $
 
 =head1 VERSION
 
-1.01
+1.02
 
 =head1 SYNOPSIS
 
-=head2 Create a Translator class
-
-    package MyProjectTranslator;
-
-    use HTML::Template::Compiled::Plugin::I18N;
-
-    sub translate {
-        my ($class, $arg_ref) = @_;
-
-        # Translate the text (maketext) or text + plural (gettext).
-        my $translation
-            = your_translator( $arg_ref->{text}, ... );
-        # Escape the translated string now.
-        if ( exists $arg_ref->{escape} ) {
-            $translation = HTML::Template::Compiled::Plugin::I18N->escape(
-                $translation,
-                $params->{escape},
-            );
-        }
-        if ( exists $arg_ref->{unescaped} ) {
-            $translation = HTML::Template::Compiled::Plugin::I18N->expand_unescaped(
-                $translation,
-                $arg_ref->{unescaped},
-            );
-        }
-    }
-
-=head2 Initialize plugin and then the template
+=head2 Initialize the plugin and then the template
 
     use HTML::Template::Compiled;
     use HTML::Template::Compiled::Plugin::I18N;
 
     HTML::Template::Compiled::Plugin::I18N->init(
-        # all parameters are optional
+        # All parameters are optional.
         escape_plugins => [ qw(
             HTML::Template::Compiled::Plugins::ExampleEscape
         ) ],
+        # At first write this not. Use the default translator.
         translator_class => 'MyProjectTranslator',
     );
 
@@ -614,6 +588,54 @@ $HeadURL: https://htc-plugin-i18n.svn.sourceforge.net/svnroot/htc-plugin-i18n/tr
         scalarref => \'<%TEXT VALUE="Hello World!" %>',
     );
     print $htc->output();
+
+=head2 Create a Translator class
+
+This translator class replaces the default translator.
+
+    package MyProjectTranslator;
+
+    use HTML::Template::Compiled::Plugin::I18N;
+
+    sub translate {
+        my ($class, $arg_ref) = @_;
+
+        # Translate the 'text'.
+        # If maketext is allowed, replace the 'maketext' placeholders.
+        # Alternative, if gettext is allowed, translate 'text' and 'plural'
+        # and replace the 'gettext' palceholders.
+        my $translation
+            = your_translator( $arg_ref->{text}, ... );
+
+        # Escape the translated string now.
+        if ( exists $arg_ref->{escape} ) {
+            $translation = HTML::Template::Compiled::Plugin::I18N->escape(
+                $translation,
+                $params->{escape},
+            );
+        }
+
+        # If formatters are allowed, run the formatters like Markdown.
+        if ( exists $arg_ref->{formatter} ) {
+            my $formatter_ref = $arg_ref->{formatter};
+            for my $formatter ( @{$formatter_ref} ) {
+                # Call here a formatter like Markdown
+                if (lc $formatter eq lc 'Markdown') {
+                    # $translation = ... $tanslation;
+                }
+            }
+        }
+
+        # If unescaped is allowed, replace at least the unescaped placholders.
+        if ( exists $arg_ref->{unescaped} ) {
+            $translation = HTML::Template::Compiled::Plugin::I18N->expand_unescaped(
+                $translation,
+                $arg_ref->{unescaped},
+            );
+        }
+
+        return $translation;
+    }
 
 =head1 DESCRIPTION
 

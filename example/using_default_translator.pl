@@ -20,7 +20,7 @@ $htc->param(
 );
 () = print $htc->output();
 
-# $Id$
+# $Id: using_default_translator.pl 163 2009-12-03 09:20:38Z steffenw $
 
 __END__
 

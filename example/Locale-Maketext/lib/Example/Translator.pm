@@ -74,6 +74,15 @@ sub translate {
             $arg_ref->{escape},
         );
     }
+    if ( exists $arg_ref->{formatter} ) {
+        my $formatter_ref = $arg_ref->{formatter};
+        for my $formatter ( @{$formatter_ref} ) {
+            # Call here a formatter like Markdown
+            if (lc $formatter eq lc 'Markdown') {
+                # $translation = ... $tanslation;
+            }
+        }
+    }
     if ( exists $arg_ref->{unescaped} ) {
         $translation = HTML::Template::Compiled::Plugin::I18N->expand_unescaped(
             $translation,
@@ -88,4 +97,4 @@ sub translate {
 
 __END__
 
-$Id$
+$Id: Translator.pm 163 2009-12-03 09:20:38Z steffenw $

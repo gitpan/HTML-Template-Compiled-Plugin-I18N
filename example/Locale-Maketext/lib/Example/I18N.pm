@@ -22,5 +22,4 @@ Locale::Maketext::Lexicon->import({
 
 __END__
 
-$Id$
-
+$Id: I18N.pm 163 2009-12-03 09:20:38Z steffenw $
