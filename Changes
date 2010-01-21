@@ -1,5 +1,8 @@
 Revision history for Perl extension HTML::Template::Compiled::Plugin::I18N.
 
+1.03  Thu Jan 21 14:00:00 2010
+- A default escape can be more than 1 escape.
+
 1.02  Thu Dec  3 10:15:00 2009
 - Better POD and examples.
 
@@ -34,4 +37,4 @@ Revision history for Perl extension HTML::Template::Compiled::Plugin::I18N.
 - lot of changes including an API change
 
 0.01_01  Tue Jul 14 14:00:00 2009
-- fist developer version
+- first developer version

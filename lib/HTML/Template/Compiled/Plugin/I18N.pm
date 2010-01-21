@@ -3,7 +3,7 @@ package HTML::Template::Compiled::Plugin::I18N;
 use strict;
 use warnings;
 
-our $VERSION = '1.02';
+our $VERSION = '1.03';
 
 use Carp qw(croak);
 use English qw(-no_match_vars $EVAL_ERROR);
@@ -419,7 +419,9 @@ sub _check_escape {
     my $package = __PACKAGE__;
     my $unknown_escapes = _calculate_escape({
         escapes => [
-            $htc->get_default_escape(),
+            (
+                split m{\|}xms, $htc->get_default_escape()
+            ),
             (
                 exists $data_ref->{escape}
                 ? @{ $data_ref->{escape}->{array} }
@@ -556,13 +558,13 @@ __END__
 
 HTML::Template::Compiled::Plugin::I18N - Internationalization for HTC
 
-$Id: I18N.pm 161 2009-12-03 09:05:54Z steffenw $
+$Id: I18N.pm 169 2010-01-21 12:47:36Z steffenw $
 
 $HeadURL: https://htc-plugin-i18n.svn.sourceforge.net/svnroot/htc-plugin-i18n/trunk/lib/HTML/Template/Compiled/Plugin/I18N.pm $
 
 =head1 VERSION
 
-1.02
+1.03
 
 =head1 SYNOPSIS
 
