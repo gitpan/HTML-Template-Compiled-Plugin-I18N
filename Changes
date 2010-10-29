@@ -1,5 +1,8 @@
 Revision history for Perl extension HTML::Template::Compiled::Plugin::I18N.
 
+1.04  Fri Oct 29 21:32:11 2010
+- Ignore problems with URI::Escape of HTC.
+
 1.03  Thu Jan 21 14:00:00 2010
 - A default escape can be more than 1 escape.
 

@@ -59,15 +59,14 @@ my @data = (
         result         => q{text=text&lt;\&#39;6\&#39;&gt;},
     },
     {
-        test           => 'default escape JS|HTML',
+        test           => 'escape URI',
         default_escape => 'Js|HtMl',
-        template       => q{<%TEXT VALUE="text<'7'>" ESCAPE=UrI%>},
-        result         => q{text=text%3C'7'%3E},
+        template       => q{<%TEXT VALUE="text<7>" ESCAPE=UrI%>},
+        result         => q{text=text%3C7%3E},
     },
 );
 
 for my $data (@data) {
-    $TEST::TEST = $data->{default_escape} eq 'JS|HTML';
     my $htc = HTML::Template::Compiled->new(
         tagstyle       => [qw(-classic -comment +asp)],
         plugin         => [qw(HTML::Template::Compiled::Plugin::I18N)],
@@ -82,5 +81,4 @@ for my $data (@data) {
         $data->{result},
         $data->{test},
     );
-    $TEST::TEST = 0;
 }

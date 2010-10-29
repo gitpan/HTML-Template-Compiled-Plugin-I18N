@@ -3,7 +3,7 @@ package HTML::Template::Compiled::Plugin::I18N;
 use strict;
 use warnings;
 
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 use Carp qw(croak);
 use English qw(-no_match_vars $EVAL_ERROR);
@@ -558,13 +558,13 @@ __END__
 
 HTML::Template::Compiled::Plugin::I18N - Internationalization for HTC
 
-$Id: I18N.pm 169 2010-01-21 12:47:36Z steffenw $
+$Id: I18N.pm 180 2010-10-29 19:44:26Z steffenw $
 
 $HeadURL: https://htc-plugin-i18n.svn.sourceforge.net/svnroot/htc-plugin-i18n/trunk/lib/HTML/Template/Compiled/Plugin/I18N.pm $
 
 =head1 VERSION
 
-1.03
+1.04
 
 =head1 SYNOPSIS
 
@@ -1075,15 +1075,15 @@ Carp
 
 English
 
-L<Hash::Util>
+L<Hash::Util|Hash::Util>
 
-L<Data::Dumper>
+L<Data::Dumper|Data::Dumper>
 
-L<HTML::Template::Compiled>
+L<HTML::Template::Compiled|HTML::Template::Compiled>
 
-L<HTML::Template::Compiled::Token>
+L<HTML::Template::Compiled::Token|HTML::Template::Compiled::Token>
 
-L<HTML::Template::Compiled::I18N::DefaultTranslator>
+L<HTML::Template::Compiled::I18N::DefaultTranslator|HTML::Template::Compiled::I18N::DefaultTranslator>
 
 =head1 INCOMPATIBILITIES
 
@@ -1095,10 +1095,10 @@ not known
 
 =head1 SEE ALSO
 
-L<HTML::Template::Compiled>
+L<HTML::Template::Compiled|HTML::Template::Compiled>
 
-L<Hyper::Template::Plugin::Text>
-This is the idea for this module.
+L<Hyper::Template::Plugin::Text|Hyper::Template::Plugin::Text>
+This was the idea for this module.
 This can not support escape.
 This can not handle gettext.
 The module is too Hyper-ish and not for common use.
@@ -1109,7 +1109,7 @@ Steffen Winkler
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (c) 2009,
+Copyright (c) 2009 - 2010,
 Steffen Winkler
 C<< <steffenw at cpan.org> >>.
 All rights reserved.
